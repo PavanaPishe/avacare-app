@@ -6,7 +6,7 @@ def go_back_to(state_name):
 
 # Set up the app page
 st.set_page_config(page_title="AVACARE Assistant", page_icon="💬")
-st.title("💬 Welcome to AVACARE – Your Virtual Healthcare Assistant")
+st.title("Hey! My name is AVA!")
 
 # Initialize session state variables
 if "chat_state" not in st.session_state:
@@ -16,7 +16,7 @@ if "chat_state" not in st.session_state:
 
 # Step 1: Communication Mode Selection
 if st.session_state.chat_state == "choose_mode":
-    st.subheader("🛠️ Step 1: Choose how you'd like to talk to Ava")
+    st.subheader("How you'd like to talk to me")
     col1, col2, col3 = st.columns(3)
 
     with col1:
@@ -30,7 +30,7 @@ if st.session_state.chat_state == "choose_mode":
             st.session_state.chat_state = "choose_language"
 
     with col3:
-        if st.button("📞 IVR Call"):
+        if st.button("📞Call"):
             st.session_state.mode = "ivr"
             st.session_state.chat_state = "choose_language"
 elif st.session_state.chat_state == "choose_language":
