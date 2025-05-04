@@ -125,3 +125,29 @@ elif st.session_state.chat_state == "get_new_info":
         st.session_state.patient_id = new_id
         st.success(f"Thanks, {st.session_state.name}. You’ve been registered with Patient ID: {new_id}")
     go_back_to("ask_identity")
+
+# --- STEP 6: PATIENT DASHBOARD ---
+elif st.session_state.chat_state == "main_menu":
+    st.subheader(f"Welcome, {st.session_state.name}")
+    st.markdown("Please select one of the following options to proceed:")
+
+    option = st.radio("Available Actions", [
+        "Book an Appointment",
+        "View Appointment History",
+        "Update Contact Information",
+        "Exit Session"
+    ])
+
+    if option == "Book an Appointment":
+        st.session_state.chat_state = "booking_flow"
+        st.rerun()
+
+    elif option == "View Appointment History":
+        st.write("This section will display past and upcoming appointments. (Coming soon)")
+
+    elif option == "Update Contact Information":
+        st.write("Feature to update your contact or location details will be available soon.")
+
+    elif option == "Exit Session":
+        st.success("Thank you for using AVACARE. You may now close the session.")
+
