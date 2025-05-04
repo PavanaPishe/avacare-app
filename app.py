@@ -140,7 +140,7 @@ elif st.session_state.chat_state == "get_new_info":
     go_back_to("ask_identity")
 
 
-  # --- STEP 6: Patient Dashboard ---
+# --- STEP 6: Patient Dashboard ---
 elif st.session_state.chat_state == "main_menu":
     st.subheader(f"Welcome, {st.session_state.name}")
     st.markdown("Select an option below:")
@@ -157,19 +157,18 @@ elif st.session_state.chat_state == "main_menu":
         st.rerun()
 
     elif option == "View Appointment History":
-        st.info("Feature under development.")
+        st.info("This section will soon display your previous and upcoming appointments.")
 
     elif option == "Update Contact Information":
-        st.info("Feature under development.")
+        st.info("You’ll soon be able to update your phone number or location here.")
 
     elif option == "Exit":
-        st.success("Thank you for using AVACARE. Session closed.")
+        st.success("Thank you for using AVACARE. You may now close the session.")
 
 # --- STEP 7: Booking Flow ---
 elif st.session_state.chat_state == "booking_flow":
     st.subheader("Book an Appointment")
 
-    # Load doctor and availability data
     @st.cache_data
     def load_doctor_data():
         df_profile = pd.read_excel("AVACARE_20_Doctors_Info_and_Availability.xlsx", sheet_name="Doctor_Profile")
@@ -182,16 +181,15 @@ elif st.session_state.chat_state == "booking_flow":
     specializations = doctor_df["Specialty"].unique()
     selected_specialty = st.selectbox("Choose a specialization", specializations)
 
-    # Filter doctors by specialty
+    # Select Doctor
     filtered_doctors = doctor_df[doctor_df["Specialty"] == selected_specialty]
     doctor_names = filtered_doctors["Name"].tolist()
     selected_doctor = st.selectbox("Select a doctor", doctor_names)
 
-    # Filter available slots
+    # Show Available Slots
     doctor_id = filtered_doctors[filtered_doctors["Name"] == selected_doctor]["Doctor_ID"].values[0]
     available_slots = availability_df[
-        (availability_df["Doctor_ID"] == doctor_id) &
-        (availability_df["Status"] == "Open")
+        (availability_df["Doctor_ID"] == doctor_id) & (availability_df["Status"] == "Open")
     ]
 
     if not available_slots.empty:
@@ -199,7 +197,6 @@ elif st.session_state.chat_state == "booking_flow":
         selected_slot = st.selectbox("Choose an available slot", slot_options)
 
         if st.button("Confirm Appointment"):
-            # Placeholder: In real app, update sheet here
             st.success(f"Appointment booked with Dr. {selected_doctor} on {selected_slot}.")
             st.session_state.chat_state = "main_menu"
             st.rerun()
@@ -208,5 +205,3 @@ elif st.session_state.chat_state == "booking_flow":
 
     go_back_to("main_menu")
 
-    elif option == "Exit":
-        st.success("Thank you for using AVACARE. Session closed.")
