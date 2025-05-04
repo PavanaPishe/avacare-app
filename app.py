@@ -8,7 +8,7 @@ st.title("💬 AVACARE Virtual Assistant (Ava)")
 # Step 1: Load datasets
 @st.cache_data
 def load_data():
-    patients = pd.read_csv("AVACARE_Patient_Dataset.csv")
+    patients = pd.read_csv("AVACARE_Patient_Dataset_Aligned.csv")
     xls = pd.ExcelFile("AVACARE_20_Doctors_Info_and_Availability.xlsx")
     doctor_info = pd.read_excel(xls, sheet_name="Doctor_Info")
     availability = pd.read_excel(xls, sheet_name="Doctor_Availability")
