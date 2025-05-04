@@ -66,24 +66,26 @@ elif st.session_state.chat_state == "greeting":
     for msg in st.session_state.chat_history:
         st.write(msg)
 
-    # User reply box
-    user_input = st.text_input("You:")
+    # Text input with key
+user_input = st.text_input("You:", key="user_text")
 
-    if user_input:
-        st.session_state.chat_history.append(f"👤 You: {user_input}")
+if user_input and "last_input" not in st.session_state or st.session_state.last_input != user_input:
+    st.session_state.chat_history.append(f"👤 You: {user_input}")
 
-        # Basic AI response
-        if "appointment" in user_input.lower():
-            reply = "📅 Ava: Sure! May I know your name and Patient ID (if you have one)?"
-        elif "hello" in user_input.lower() or "hi" in user_input.lower():
-            reply = "🤖 Ava: Hello there! How can I help you today?"
-        elif "help" in user_input.lower():
-            reply = "🤖 Ava: I can help you book appointments, view schedules, or update your details."
-        else:
-            reply = "🤖 Ava: I'm still learning. Could you please rephrase?"
+    # Simple intent match
+    if "appointment" in user_input.lower():
+        reply = "📅 Ava: Sure! May I know your name and Patient ID (if you have one)?"
+    elif "hello" in user_input.lower() or "hi" in user_input.lower():
+        reply = "🤖 Ava: Hello there! How can I help you today?"
+    elif "help" in user_input.lower():
+        reply = "🤖 Ava: I can help you book appointments, view schedules, or update your details."
+    else:
+        reply = "🤖 Ava: I'm still learning. Could you please rephrase?"
 
-        st.session_state.chat_history.append(reply)
-        st.rerun()
+    st.session_state.chat_history.append(reply)
 
-    # Optional back button to go change language
-    go_back_to("choose_language")
+    # Save input to avoid loop
+    st.session_state.last_input = user_input
+
+    # Clear input field
+    st.experimental_rerun()  # Still safe here
