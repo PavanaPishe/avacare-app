@@ -4,7 +4,7 @@ import pandas as pd
 # Load data
 @st.cache_data
 def load_data():
-    patients = pd.read_csv("AVACARE_Patient_Dataset_Aligned(1).csv")
+    patients = pd.read_csv("AVACARE_Patient_Dataset_Aligned.csv")
     return patients
 
 patients_df = load_data()
