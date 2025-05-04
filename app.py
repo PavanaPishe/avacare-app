@@ -151,3 +151,9 @@ elif st.session_state.chat_state == "main_menu":
     elif option == "Exit Session":
         st.success("Thank you for using AVACARE. You may now close the session.")
 
+if not match.empty:
+    st.success(f"Welcome back, {st.session_state.name}. Your identity has been verified.")
+    st.session_state.chat_state = "main_menu"
+    st.rerun()
+
+
