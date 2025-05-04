@@ -62,3 +62,36 @@ elif st.session_state.chat_state == "loaded":
 
     elif choice == "❓ Ask a question":
         st.text_input("Sure, what would you like to know?")
+        # Inside: if choice == "📅 Book an appointment":
+
+# Load doctor availability Excel (once)
+@st.cache_data
+def load_doctors():
+    doctor_availability = pd.read_excel("AVACARE_20_Doctors_Info_and_Availability.xlsx", sheet_name="Doctor_Availability")
+    return doctor_availability
+
+availability_df = load_doctors()
+
+# Filter available slots by specialty and status
+specialty = patient["Suggested_Specialty"]
+available_slots = availability_df[
+    (availability_df["Specialty"] == specialty) &
+    (availability_df["Slot_Status"] == "Open")
+]
+
+if available_slots.empty:
+    st.error(f"😥 Sorry, there are no open slots for {specialty} right now.")
+else:
+    st.info(f"Here are some available slots for {specialty}:")
+    slots_to_show = available_slots.head(5)
+
+    # Show as selectable radio buttons
+    slot_options = [
+        f"{row['Doctor_Name']} — {row['Date']} at {row['Start_Time']}" for _, row in slots_to_show.iterrows()
+    ]
+    selected_slot = st.radio("Select a slot to confirm booking:", slot_options)
+
+    if st.button("✅ Confirm Appointment"):
+        st.success("🎉 Your appointment is confirmed!")
+        st.balloons()
+
