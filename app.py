@@ -81,6 +81,6 @@ elif st.session_state.chat_state == "greeting":
             reply = "🤖 Ava: I'm still learning. Could you please rephrase?"
 
         st.session_state.chat_history.append(reply)
-        st.experimental_rerun()
+       st.rerun()
 
     go_back_to("choose_language")
