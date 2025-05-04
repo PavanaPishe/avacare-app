@@ -151,8 +151,50 @@ elif st.session_state.chat_state == "main_menu":
         "Exit"
     ])
 
-    if option == "Book an Appointment":
-        st.info("Appointment booking flow coming soon.")
+   elif st.session_state.chat_state == "booking_flow":
+    st.subheader("Book an Appointment")
+
+    # Load doctor and availability data
+    @st.cache_data
+    def load_doctor_data():
+        df_profile = pd.read_excel("AVACARE_20_Doctors_Info_and_Availability.xlsx", sheet_name="Doctor_Profile")
+        df_slots = pd.read_excel("AVACARE_20_Doctors_Info_and_Availability.xlsx", sheet_name="Doctor_Availability")
+        return df_profile, df_slots
+
+    doctor_df, availability_df = load_doctor_data()
+
+    # Select Specialization
+    specializations = doctor_df["Specialty"].unique()
+    selected_specialty = st.selectbox("Choose a specialization", specializations)
+
+    # Filter doctors by specialty
+    filtered_doctors = doctor_df[doctor_df["Specialty"] == selected_specialty]
+    doctor_names = filtered_doctors["Name"].tolist()
+    selected_doctor = st.selectbox("Select a doctor", doctor_names)
+
+    # Filter available slots
+    doctor_id = filtered_doctors[filtered_doctors["Name"] == selected_doctor]["Doctor_ID"].values[0]
+    available_slots = availability_df[
+        (availability_df["Doctor_ID"] == doctor_id) &
+        (availability_df["Status"] == "Open")
+    ]
+
+    if not available_slots.empty:
+        slot_options = available_slots["Day"] + " - " + available_slots["Time"]
+        selected_slot = st.selectbox("Choose an available slot", slot_options)
+
+        if st.button("Confirm Appointment"):
+            # Mark slot as filled (in future: update sheet)
+            st.success(f"Appointment booked with Dr. {selected_doctor} on {selected_slot}.")
+
+            # Optionally: Add this to a separate appointment log Google Sheet
+            st.session_state.chat_state = "main_menu"
+            st.rerun()
+    else:
+        st.warning("No open slots available for this doctor.")
+
+    go_back_to("main_menu")
+
     elif option == "View Appointment History":
         st.info("Feature under development.")
     elif option == "Update Contact Information":
