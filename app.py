@@ -1,4 +1,8 @@
 import streamlit as st
+def go_back_to(state_name):
+    if st.button("🔙 Back"):
+        st.session_state.chat_state = state_name
+        st.stop()
 
 # Set up the app page
 st.set_page_config(page_title="AVACARE Assistant", page_icon="💬")
@@ -29,6 +33,16 @@ if st.session_state.chat_state == "choose_mode":
         if st.button("📞 IVR Call"):
             st.session_state.mode = "ivr"
             st.session_state.chat_state = "choose_language"
+elif st.session_state.chat_state == "choose_language":
+    st.subheader("🌍 Step 2: Select your preferred language")
+    st.session_state.language = st.radio("Available Languages:", ["English", "Hindi", "Spanish"])
+
+    if st.button("✅ Continue"):
+        st.success(f"You selected {st.session_state.mode.upper()} mode and {st.session_state.language} language.")
+        st.session_state.chat_state = "greeting"
+
+    # Add back button to go to mode selection
+    go_back_to("choose_mode")
 
 # Step 2: Language Selection
 elif st.session_state.chat_state == "choose_language":
@@ -41,6 +55,16 @@ elif st.session_state.chat_state == "choose_language":
     if st.button("✅ Continue"):
         st.success(f"You selected {st.session_state.mode.upper()} mode and {st.session_state.language} language.")
         st.session_state.chat_state = "greeting"
+elif st.session_state.chat_state == "greeting":
+    greeting = {
+        "English": "Hi, how are you doing today?",
+        "Hindi": "नमस्ते, आज आप कैसे हैं?",
+        "Spanish": "Hola, ¿cómo estás hoy?"
+    }
+    st.write(greeting[st.session_state.language])
+
+    # Go back to language selection if needed
+    go_back_to("choose_language")
 
 # (Optional) Step 3: Proceed to greeting
 elif st.session_state.chat_state == "greeting":
