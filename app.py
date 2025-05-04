@@ -67,7 +67,7 @@ elif st.session_state.chat_state == "greeting":
     # Get user input
     user_input = st.text_input("You:", key="user_input")
 
-    if user_input:
+        if user_input:
         st.session_state.chat_history.append(f"👤 You: {user_input}")
 
         # Ava's response logic
@@ -81,6 +81,6 @@ elif st.session_state.chat_state == "greeting":
             reply = "🤖 Ava: I'm still learning. Could you please rephrase?"
 
         st.session_state.chat_history.append(reply)
-       st.rerun()
 
-    go_back_to("choose_language")
+        st.rerun()  # ✅ Make sure this line is indented to the same level as above
+
