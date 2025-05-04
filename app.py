@@ -11,7 +11,8 @@ def connect_to_google_sheet():
     creds = ServiceAccountCredentials.from_json_keyfile_dict(
         st.secrets["gcp_service_account"], scope)
     client = gspread.authorize(creds)
-    sheet = client.open("AVACARE_Patient_Records").sheet1  # Make sure this matches sheet name
+    sheet = client.open("Synthetic Patient Dataset Needed for Streamlit (AVACARE)").sheet1
+  # Make sure this matches sheet name
     return sheet
 
 def get_next_patient_id_sheets(sheet):
