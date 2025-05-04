@@ -139,7 +139,8 @@ elif st.session_state.chat_state == "get_new_info":
         st.rerun()
     go_back_to("ask_identity")
 
-# --- STEP 6: Patient Dashboard ---
+
+  # --- STEP 6: Patient Dashboard ---
 elif st.session_state.chat_state == "main_menu":
     st.subheader(f"Welcome, {st.session_state.name}")
     st.markdown("Select an option below:")
@@ -151,7 +152,21 @@ elif st.session_state.chat_state == "main_menu":
         "Exit"
     ])
 
-   elif st.session_state.chat_state == "booking_flow":
+    if option == "Book an Appointment":
+        st.session_state.chat_state = "booking_flow"
+        st.rerun()
+
+    elif option == "View Appointment History":
+        st.info("Feature under development.")
+
+    elif option == "Update Contact Information":
+        st.info("Feature under development.")
+
+    elif option == "Exit":
+        st.success("Thank you for using AVACARE. Session closed.")
+
+# --- STEP 7: Booking Flow ---
+elif st.session_state.chat_state == "booking_flow":
     st.subheader("Book an Appointment")
 
     # Load doctor and availability data
@@ -184,10 +199,8 @@ elif st.session_state.chat_state == "main_menu":
         selected_slot = st.selectbox("Choose an available slot", slot_options)
 
         if st.button("Confirm Appointment"):
-            # Mark slot as filled (in future: update sheet)
+            # Placeholder: In real app, update sheet here
             st.success(f"Appointment booked with Dr. {selected_doctor} on {selected_slot}.")
-
-            # Optionally: Add this to a separate appointment log Google Sheet
             st.session_state.chat_state = "main_menu"
             st.rerun()
     else:
@@ -195,9 +208,5 @@ elif st.session_state.chat_state == "main_menu":
 
     go_back_to("main_menu")
 
-    elif option == "View Appointment History":
-        st.info("Feature under development.")
-    elif option == "Update Contact Information":
-        st.info("Feature under development.")
     elif option == "Exit":
         st.success("Thank you for using AVACARE. Session closed.")
