@@ -10,8 +10,10 @@ st.title("💬 AVACARE Virtual Assistant (Ava)")
 def load_data():
     patients = pd.read_csv("AVACARE_Patient_Dataset_Aligned.csv")
     xls = pd.ExcelFile("AVACARE_20_Doctors_Info_and_Availability.xlsx")
-    doctor_info = pd.read_excel(xls, sheet_name="Doctor_Info")
-    availability = pd.read_excel(xls, sheet_name="Doctor_Availability")
+    # See sheet names first (for debug)
+    sheet_names = xls.sheet_names
+    doctor_info = pd.read_excel(xls, sheet_name=sheet_names[0])  # likely 'Doctor_Info'
+    availability = pd.read_excel(xls, sheet_name=sheet_names[1])  # likely 'Doctor_Availability' or similar
     return patients, doctor_info, availability
 
 patients_df, doctor_info_df, availability_df = load_data()
@@ -50,7 +52,6 @@ elif st.session_state.chat_state == "loaded":
     patient = st.session_state.patient_data
     st.success(f"Welcome back, {patient['First_Name']}! 😊")
 
-    # Risk-based message
     if patient["Risk_Category"] == "High":
         st.warning("⚠️ I noticed you've missed several appointments. Let’s get you back on track!")
 
@@ -60,11 +61,10 @@ elif st.session_state.chat_state == "loaded":
         st.write("Great! I’ll fetch available slots based on your specialty.")
         st.info(f"Your preferred specialty is: **{patient['Suggested_Specialty']}**")
 
-        # Step 5: Match doctor availability
         specialty = patient["Suggested_Specialty"]
         available_slots = availability_df[
             (availability_df["Specialty"] == specialty) &
-            (availability_df["Slot_Status"] == "Open")
+            (availability_df["Slot_Status"].str.lower() == "open")
         ]
 
         if available_slots.empty:
