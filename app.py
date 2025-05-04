@@ -7,7 +7,8 @@ import os
 @st.cache_resource
 def connect_to_google_sheet():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets, scope)
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(
+    st.secrets["gcp_service_account"], scope)
     client = gspread.authorize(creds)
     sheet = client.open("AVACARE_Patient_Records").sheet1  # Adjust if using another sheet name
     return sheet
