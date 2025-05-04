@@ -1,73 +1,82 @@
 import streamlit as st
-import pandas as pd
 import uuid
 
-# Title & setup
-st.set_page_config(page_title="AVACARE Virtual Assistant", page_icon="💬")
-st.title("💬 AVACARE Virtual Assistant (Ava)")
+# Setup
+st.set_page_config(page_title="AVACARE AI Assistant", page_icon="💬")
+st.title("💬 AVACARE – Virtual Healthcare Assistant")
 
-# Load data
-@st.cache_data
-def load_data():
-    patients = pd.read_csv("AVACARE_Patient_Dataset_Aligned.csv")
-    xls = pd.ExcelFile("AVACARE_20_Doctors_Info_and_Availability.xlsx")
-    doctor_info = pd.read_excel(xls, sheet_name=xls.sheet_names[0])
-    availability = pd.read_excel(xls, sheet_name=xls.sheet_names[1])
-    return patients, doctor_info, availability
-
-patients_df, doctor_info_df, availability_df = load_data()
-
-# Session state setup
+# Session state for conversation
 if "chat_state" not in st.session_state:
-    st.session_state.chat_state = "greeting"
-    st.session_state.mode = ""
-    st.session_state.returning = None
-    st.session_state.patient_data = None
-    st.session_state.patient_id = ""
+    st.session_state.chat_state = "start"
+    st.session_state.mode = None
+    st.session_state.language = None
     st.session_state.name = ""
+    st.session_state.patient_id = ""
+    st.session_state.returning = None
 
-# Step 1: Channel selection
-if st.session_state.chat_state == "greeting":
-    st.write("👋 Hello! I'm Ava, your AI scheduling assistant.")
-    st.session_state.mode = st.radio("How would you like to communicate?", ["💬 Chat", "📞 Voice", "📱 IVR"])
+# Step 1: Ask for communication mode
+if st.session_state.chat_state == "start":
+    st.write("👋 Welcome to AVACARE!")
+    st.write("How would you like to communicate with me?")
+    st.session_state.mode = st.radio("Choose your preferred method:", ["💬 Chat", "🎙️ Voice", "📞 IVR Call"])
 
     if st.session_state.mode == "💬 Chat":
-        st.session_state.chat_state = "ask_returning"
-    elif st.session_state.mode in ["📞 Voice", "📱 IVR"]:
-        st.warning("⚠️ Voice and IVR support is coming soon! For now, please continue via Chat.")
-        st.session_state.chat_state = "ask_returning"
+        st.success("✅ Chat selected. Proceeding...")
+        st.session_state.chat_state = "language"
 
-# Step 2: Ask if returning or new
-elif st.session_state.chat_state == "ask_returning":
-    st.session_state.returning = st.radio("Are you a returning patient?", ["Yes", "No"])
+    elif st.session_state.mode == "🎙️ Voice":
+        st.info("🎤 Voice selected. (Simulated voice input - speak into your mic below)")
+        st.audio("https://upload.wikimedia.org/wikipedia/commons/4/4f/Sample.ogg")  # Placeholder mic icon
+        st.session_state.chat_state = "language"
 
-    if st.session_state.returning == "Yes":
-        st.session_state.chat_state = "ask_returning_id"
-    elif st.session_state.returning == "No":
-        st.session_state.chat_state = "register_new"
+    elif st.session_state.mode == "📞 IVR Call":
+        st.info("📞 Please call **+1-800-AVA-CARE** to use our IVR-powered AI assistant.")
+        st.session_state.chat_state = "language"
 
-# Step 3A: Returning user flow
-elif st.session_state.chat_state == "ask_returning_id":
-    st.session_state.name = st.text_input("Please enter your full name:")
-    st.session_state.patient_id = st.text_input("Please enter your Patient ID (e.g., AVP-1021):")
+# Step 2: Language selection
+elif st.session_state.chat_state == "language":
+    st.write("🌐 What is your preferred language?")
+    st.session_state.language = st.radio("Select Language:", ["English", "Hindi", "Spanish"])
 
-    if st.session_state.name and st.session_state.patient_id:
-        matched = patients_df[patients_df["Patient_ID"] == st.session_state.patient_id]
-        if not matched.empty:
-            st.session_state.patient_data = matched.iloc[0]
-            st.session_state.chat_state = "loaded"
-        else:
-            st.error("❌ Couldn't find your Patient ID. Please check again or continue as a new patient.")
+    if st.session_state.language:
+        st.session_state.chat_state = "greeting"
 
-# Step 3B: New user flow
-elif st.session_state.chat_state == "register_new":
-    st.session_state.name = st.text_input("Welcome! Please enter your full name to get started:")
+# Step 3: Gentle greeting
+elif st.session_state.chat_state == "greeting":
+    greeting_msg = {
+        "English": "Hi, how are you doing today?",
+        "Hindi": "नमस्ते, आज आप कैसे हैं?",
+        "Spanish": "Hola, ¿cómo estás hoy?"
+    }
+    st.write(greeting_msg[st.session_state.language])
+    st.session_state.chat_state = "ask_identity"
 
-    if st.session_state.name:
-        # Generate a new unique patient ID
-        new_id = "AVP-" + str(uuid.uuid4())[:8].upper()
-        st.success(f"Thanks {st.session_state.name}! Your new Patient ID is: {new_id}")
-        # You could optionally also collect more details and append to patients_df
-        st.session_state.patient_id = new_id
-        st.session_state.patient_data = None  # Not from dataset yet
-        st.session_state.chat_state = "new_user_ready"
+# Step 4: Ask for patient identity
+elif st.session_state.chat_state == "ask_identity":
+    st.write("💡 Please provide your details so I can assist you better.")
+    st.session_state.returning = st.radio(
+        "Are you a returning patient?",
+        ["Yes, I have a Patient ID", "No, I’m a new patient"]
+    )
+
+    if st.session_state.returning == "Yes, I have a Patient ID":
+        st.session_state.name = st.text_input("Please enter your full name:")
+        st.session_state.patient_id = st.text_input("Enter your Patient ID (e.g., AVP-1021):")
+
+        if st.session_state.name and st.session_state.patient_id:
+            st.success(f"Thank you, {st.session_state.name}. I'll retrieve your records next.")
+            # You’d normally validate here
+            st.session_state.chat_state = "stop_here"
+
+    elif st.session_state.returning == "No, I’m a new patient":
+        st.session_state.name = st.text_input("Please enter your full name:")
+        if st.session_state.name:
+            generated_id = "AVP-" + str(uuid.uuid4())[:8].upper()
+            st.session_state.patient_id = generated_id
+            st.success(f"🎉 Welcome, {st.session_state.name}! Your new Patient ID is **{generated_id}**.")
+            # You’d store this in your database or CSV next
+            st.session_state.chat_state = "stop_here"
+
+# Final step (placeholder)
+elif st.session_state.chat_state == "stop_here":
+    st.info("✅ Chatbot is now ready to help you book appointments or answer questions. (Next logic coming soon)")
