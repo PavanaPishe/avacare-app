@@ -25,9 +25,13 @@ def register_new_patient(sheet, name):
     sheet.append_row([name, new_id])
     return new_id
 
-# --- Streamlit UI Config ---
+def load_patient_dataframe(sheet):
+    records = sheet.get_all_records()
+    return pd.DataFrame(records)
+
+# --- UI Config ---
 st.set_page_config(page_title="AVACARE Assistant", page_icon="💼")
-st.markdown("<h1 style='font-family: Arial; color: #002B5B;'>Welcome to AVACARE Virtual Assistant</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='font-family: Arial; color: #002B5B;'>AVACARE Virtual Assistant</h1>", unsafe_allow_html=True)
 
 # --- Session State ---
 if "chat_state" not in st.session_state:
@@ -47,25 +51,25 @@ def go_back_to(state_name):
 
 # --- STEP 1: Communication Mode ---
 if st.session_state.chat_state == "choose_mode":
-    st.subheader("Step 1: Select Your Communication Mode")
+    st.subheader("Step 1: Choose how you'd like to communicate")
     col1, col2, col3 = st.columns(3)
     with col1:
-        if st.button("💬 Chat"):
+        if st.button("Chat"):
             st.session_state.mode = "chat"
             st.session_state.chat_state = "choose_language"
     with col2:
-        if st.button("🎙️ Voice"):
+        if st.button("Voice"):
             st.session_state.mode = "voice"
             st.session_state.chat_state = "choose_language"
     with col3:
-        if st.button("📞 Call"):
+        if st.button("Call"):
             st.session_state.mode = "ivr"
             st.session_state.chat_state = "choose_language"
 
 # --- STEP 2: Language Selection ---
 elif st.session_state.chat_state == "choose_language":
-    st.subheader("Step 2: Select Preferred Language")
-    st.session_state.language = st.radio("Choose a language:", ["English", "Hindi", "Spanish"])
+    st.subheader("Step 2: Select your preferred language")
+    st.session_state.language = st.radio("Language", ["English", "Hindi", "Spanish"])
     if st.button("Continue"):
         st.session_state.chat_state = "greeting"
         st.rerun()
@@ -78,7 +82,7 @@ elif st.session_state.chat_state == "greeting":
         "Hindi": "नमस्ते, आज आप कैसे हैं?",
         "Spanish": "Hola, ¿cómo estás hoy?"
     }
-    st.subheader("AVA Conversation")
+    st.subheader("Conversation")
     st.markdown(f"<div style='font-family: Verdana; font-size: 16px;'>{greetings[st.session_state.language]}</div>", unsafe_allow_html=True)
     user_reply = st.text_input("Your Response:")
     if user_reply:
@@ -101,61 +105,57 @@ elif st.session_state.chat_state == "ask_identity":
 
 # --- STEP 5A: RETURNING PATIENT ---
 elif st.session_state.chat_state == "get_returning_info":
-    st.subheader("Please provide your details")
+    sheet = connect_to_google_sheet()
+    patients_df = load_patient_dataframe(sheet)
 
-    name_input = st.text_input("Your Full Name:", value=st.session_state.name)
-    id_input = st.text_input("Your Patient ID (e.g., AVP-1054):", value=st.session_state.patient_id)
+    st.subheader("Please provide your details")
+    name_input = st.text_input("Full Name:", value=st.session_state.name)
+    id_input = st.text_input("Patient ID (e.g., AVP-1054):", value=st.session_state.patient_id)
 
     if name_input and id_input:
         st.session_state.name = name_input
         st.session_state.patient_id = id_input
 
         match = patients_df[patients_df["Patient_ID"] == id_input]
-
         if not match.empty:
-            st.success(f"Welcome back, {st.session_state.name}. Your identity has been verified.")
+            st.success(f"Welcome back, {st.session_state.name}. You're verified.")
             st.session_state.chat_state = "main_menu"
             st.rerun()
         else:
-            st.error("Patient ID not found. Please check your input and try again.")
-
+            st.error("Patient ID not found. Please try again.")
     go_back_to("ask_identity")
 
-
-
-# --- STEP 5B: New Patient ---
+# --- STEP 5B: New Patient Registration ---
 elif st.session_state.chat_state == "get_new_info":
-    st.subheader("Let's get you registered")
-    st.session_state.name = st.text_input("Your Full Name:")
-    if st.session_state.name:
+    st.subheader("Register as a new patient")
+    name_input = st.text_input("Full Name:")
+    if name_input:
         sheet = connect_to_google_sheet()
-        new_id = register_new_patient(sheet, st.session_state.name)
+        new_id = register_new_patient(sheet, name_input)
+        st.session_state.name = name_input
         st.session_state.patient_id = new_id
-        st.success(f"Thanks, {st.session_state.name}. You’ve been registered with Patient ID: {new_id}")
+        st.success(f"You have been registered. Your Patient ID is: {new_id}")
+        st.session_state.chat_state = "main_menu"
+        st.rerun()
     go_back_to("ask_identity")
 
-# --- STEP 6: PATIENT DASHBOARD ---
+# --- STEP 6: Patient Dashboard ---
 elif st.session_state.chat_state == "main_menu":
     st.subheader(f"Welcome, {st.session_state.name}")
-    st.markdown("Please select one of the following options to proceed:")
+    st.markdown("Select an option below:")
 
-    option = st.radio("Available Actions", [
+    option = st.radio("Options", [
         "Book an Appointment",
         "View Appointment History",
         "Update Contact Information",
-        "Exit Session"
+        "Exit"
     ])
 
     if option == "Book an Appointment":
-        st.session_state.chat_state = "booking_flow"
-        st.rerun()
-
+        st.info("Appointment booking flow coming soon.")
     elif option == "View Appointment History":
-        st.info("This section will display past and upcoming appointments. (Coming soon)")
-
+        st.info("Feature under development.")
     elif option == "Update Contact Information":
-        st.info("Feature to update your contact or location details will be available soon.")
-
-    elif option == "Exit Session":
-        st.success("Thank you for using AVACARE. You may now close the session.")
-
+        st.info("Feature under development.")
+    elif option == "Exit":
+        st.success("Thank you for using AVACARE. Session closed.")
