@@ -1,6 +1,33 @@
-import streamlit as st
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
+import streamlit as st
 import os
+
+@st.cache_resource
+def connect_to_google_sheet():
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets, scope)
+    client = gspread.authorize(creds)
+    sheet = client.open("AVACARE_Patient_Records").sheet1  # Adjust if using another sheet name
+    return sheet
+
+def get_next_patient_id(sheet):
+    records = sheet.get_all_records()
+    if not records:
+        return "AVP-4000"
+    last_id = sorted(records, key=lambda r: int(r["Patient_ID"].split("-")[1]))[-1]["Patient_ID"]
+    new_number = int(last_id.split("-")[1]) + 1
+    return f"AVP-{new_number}"
+def register_new_patient(sheet, name):
+    new_id = get_next_patient_id(sheet)
+    sheet.append_row([name, new_id])  # Update if you're saving more fields
+    return new_id
+sheet = connect_to_google_sheet()
+if st.button("Register"):
+    patient_id = register_new_patient(sheet, st.session_state.name)
+    st.success(f"Thanks, {st.session_state.name}. You’ve been registered with Patient ID: {patient_id}")
+
 
 # Set up UI config
 st.set_page_config(page_title="AVACARE Assistant", page_icon="💼")
