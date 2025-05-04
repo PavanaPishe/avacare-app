@@ -19,7 +19,8 @@ if "chat_state" not in st.session_state:
 # Load Patient Data
 @st.cache_data
 def load_patients():
-    return pd.read_csv("AVACARE_Patient_Dataset.csv")
+    return pd.read_csv("AVACARE_Patient_Dataset_Aligned.csv")
+
 
 @st.cache_data
 def get_next_patient_id(patients_df):
