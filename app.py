@@ -69,10 +69,10 @@ elif st.session_state.chat_state == "greeting":
     # Text input with key
 user_input = st.text_input("You:", key="user_text")
 
-if user_input and "last_input" not in st.session_state or st.session_state.last_input != user_input:
+if user_input and ("last_input" not in st.session_state or st.session_state.last_input != user_input):
     st.session_state.chat_history.append(f"👤 You: {user_input}")
 
-    # Simple intent match
+    # Ava's response logic
     if "appointment" in user_input.lower():
         reply = "📅 Ava: Sure! May I know your name and Patient ID (if you have one)?"
     elif "hello" in user_input.lower() or "hi" in user_input.lower():
@@ -83,9 +83,7 @@ if user_input and "last_input" not in st.session_state or st.session_state.last_
         reply = "🤖 Ava: I'm still learning. Could you please rephrase?"
 
     st.session_state.chat_history.append(reply)
+    st.session_state.last_input = user_input  # Store last message
 
-    # Save input to avoid loop
-    st.session_state.last_input = user_input
+    st.rerun()  # ✅ Correct function now
 
-    # Clear input field
-    st.experimental_rerun()  # Still safe here
