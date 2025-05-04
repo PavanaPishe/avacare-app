@@ -1,66 +1,52 @@
 import streamlit as st
 
-# Setup
-st.set_page_config(page_title="AVACARE AI Assistant", page_icon="💬")
-st.title("💬 AVACARE – Virtual Healthcare Assistant")
+# Set up the app page
+st.set_page_config(page_title="AVACARE Assistant", page_icon="💬")
+st.title("💬 Welcome to AVACARE – Your Virtual Healthcare Assistant")
 
-# State
+# Initialize session state variables
 if "chat_state" not in st.session_state:
-    st.session_state.chat_state = "start"
-    st.session_state.mode = ""
-    st.session_state.language = ""
+    st.session_state.chat_state = "choose_mode"
+    st.session_state.mode = None
+    st.session_state.language = None
 
-# Step 1: Communication mode
-if st.session_state.chat_state == "start":
-    st.write("👋 Welcome! How would you like to communicate?")
-    st.session_state.mode = st.radio("Select mode:", ["💬 Chat", "🎙️ Voice", "📞 IVR Call"])
+# Step 1: Communication Mode Selection
+if st.session_state.chat_state == "choose_mode":
+    st.subheader("🛠️ Step 1: Choose how you'd like to talk to Ava")
+    col1, col2, col3 = st.columns(3)
 
-    if st.session_state.mode:
-        st.session_state.chat_state = "language"
+    with col1:
+        if st.button("💬 Chat"):
+            st.session_state.mode = "chat"
+            st.session_state.chat_state = "choose_language"
 
-# Step 2: Language selection
-elif st.session_state.chat_state == "language":
-    st.session_state.language = st.radio("Choose your preferred language:", ["English", "Hindi", "Spanish"])
-    if st.session_state.language:
-        st.session_state.chat_state = "respond_in_mode"
+    with col2:
+        if st.button("🎙️ Voice"):
+            st.session_state.mode = "voice"
+            st.session_state.chat_state = "choose_language"
 
-# Step 3: Handle based on selected mode
-elif st.session_state.chat_state == "respond_in_mode":
-    
-    # 1️⃣ CHAT MODE
-    if st.session_state.mode == "💬 Chat":
-        st.success(f"You selected Chat in {st.session_state.language}")
-        st.write("Hi, how are you doing today?")
-        # Continue with chatbot input...
+    with col3:
+        if st.button("📞 IVR Call"):
+            st.session_state.mode = "ivr"
+            st.session_state.chat_state = "choose_language"
 
-    # 2️⃣ VOICE MODE
-    elif st.session_state.mode == "🎙️ Voice":
-        st.info("🎙️ Please record your message below:")
-        st.audio("https://upload.wikimedia.org/wikipedia/commons/4/4f/Sample.ogg")  # Placeholder mic icon
+# Step 2: Language Selection
+elif st.session_state.chat_state == "choose_language":
+    st.subheader("🌍 Step 2: Select your preferred language")
+    st.session_state.language = st.radio(
+        "Available Languages:",
+        ["English", "Hindi", "Spanish"]
+    )
 
-        st.success("✅ Got your voice input!")
+    if st.button("✅ Continue"):
+        st.success(f"You selected {st.session_state.mode.upper()} mode and {st.session_state.language} language.")
+        st.session_state.chat_state = "greeting"
 
-        # Simulated bot voice response (choose based on language)
-        st.write("🔊 Ava is responding with a voice message:")
-        if st.session_state.language == "English":
-            st.audio("https://www2.cs.uic.edu/~i101/SoundFiles/StarWars60.wav")
-        elif st.session_state.language == "Hindi":
-            st.audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3")  # Replace with real Hindi bot TTS later
-        elif st.session_state.language == "Spanish":
-            st.audio("https://www2.cs.uic.edu/~i101/SoundFiles/gettysburg10.wav")
-
-    # 3️⃣ IVR MODE
-    elif st.session_state.mode == "📞 IVR Call":
-        st.success(f"📞 Please call our AI Assistant at: +1-800-AVA-CARE")
-        st.info(f"When you call, Ava will speak to you in **{st.session_state.language}**.")
-
-        # Simulated sample of how Ava would sound in IVR
-        st.write("Here’s how Ava would respond in your language over the call:")
-        if st.session_state.language == "Hindi":
-            st.audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3")  # Placeholder Hindi voice
-        elif st.session_state.language == "English":
-            st.audio("https://www2.cs.uic.edu/~i101/SoundFiles/CantinaBand3.wav")
-        elif st.session_state.language == "Spanish":
-            st.audio("https://www2.cs.uic.edu/~i101/SoundFiles/ImperialMarch60.wav")
-
-    st.write("⚙️ [Next step: Collect patient info based on this mode & language...]")
+# (Optional) Step 3: Proceed to greeting
+elif st.session_state.chat_state == "greeting":
+    greeting = {
+        "English": "Hi, how are you doing today?",
+        "Hindi": "नमस्ते, आज आप कैसे हैं?",
+        "Spanish": "Hola, ¿cómo estás hoy?"
+    }
+    st.write(greeting[st.session_state.language])
