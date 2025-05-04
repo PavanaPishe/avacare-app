@@ -8,7 +8,7 @@ st.title("Hey! My name is AVA!")
 def go_back_to(state_name):
     if st.button("🔙 Back"):
         st.session_state.chat_state = state_name
-        st.stop()
+        st.rerun()
 
 # -------------------- SESSION STATE INIT --------------------
 if "chat_state" not in st.session_state:
@@ -44,33 +44,35 @@ elif st.session_state.chat_state == "choose_language":
 
     if st.button("✅ Continue"):
         st.session_state.chat_state = "greeting"
+        st.rerun()
 
     go_back_to("choose_mode")
 
-# -------------------- STEP 3: CHAT-STYLE GREETING --------------------
+# -------------------- STEP 3: CHAT GREETING --------------------
 elif st.session_state.chat_state == "greeting":
+    st.subheader("💬 Ava Conversation")
+
     greeting = {
         "English": "Hi, how are you doing today?",
         "Hindi": "नमस्ते, आज आप कैसे हैं?",
         "Spanish": "Hola, ¿cómo estás hoy?"
     }
-    st.subheader("💬 Ava Conversation")
-
-    # Display chat history
-    for msg in st.session_state.chat_history:
-        st.write(msg)
 
     # Show greeting only once
     if not st.session_state.chat_history:
         st.session_state.chat_history.append(f"🤖 Ava: {greeting[st.session_state.language]}")
 
-    # Get user input
-    user_input = st.text_input("You:", key="user_input")
+    # Display history
+    for msg in st.session_state.chat_history:
+        st.write(msg)
 
-        if user_input:
+    # User reply box
+    user_input = st.text_input("You:")
+
+    if user_input:
         st.session_state.chat_history.append(f"👤 You: {user_input}")
 
-        # Ava's response logic
+        # Basic AI response
         if "appointment" in user_input.lower():
             reply = "📅 Ava: Sure! May I know your name and Patient ID (if you have one)?"
         elif "hello" in user_input.lower() or "hi" in user_input.lower():
@@ -81,6 +83,7 @@ elif st.session_state.chat_state == "greeting":
             reply = "🤖 Ava: I'm still learning. Could you please rephrase?"
 
         st.session_state.chat_history.append(reply)
+        st.rerun()
 
-        st.rerun()  # ✅ Make sure this line is indented to the same level as above
-
+    # Optional back button to go change language
+    go_back_to("choose_language")
