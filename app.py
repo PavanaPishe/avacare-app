@@ -1,3 +1,6 @@
+# Initialize chat history
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
 import streamlit as st
 def go_back_to(state_name):
     if st.button("🔙 Back"):
@@ -51,6 +54,34 @@ elif st.session_state.chat_state == "choose_language":
         "Available Languages:",
         ["English", "Hindi", "Spanish"]
     )
+elif st.session_state.chat_state == "greeting":
+    # Show previous messages
+    st.subheader("💬 Ava Conversation")
+    for msg in st.session_state.chat_history:
+        st.write(msg)
+
+    # Ask user input
+    user_input = st.text_input("You:", key="user_input")
+    
+    if user_input:
+        # Append user's message
+        st.session_state.chat_history.append(f"👤 You: {user_input}")
+
+        # Ava responds (basic intent match — you can later expand with NLP)
+        if "appointment" in user_input.lower():
+            bot_reply = "📅 Ava: Sure! May I know your name and Patient ID (if you have one)?"
+        elif "hello" in user_input.lower() or "hi" in user_input.lower():
+            bot_reply = "🤖 Ava: Hello there! How can I help you today?"
+        elif "help" in user_input.lower():
+            bot_reply = "🤖 Ava: I can help you book appointments, view schedules, or update your details."
+        else:
+            bot_reply = "🤖 Ava: I'm still learning. Could you please rephrase?"
+
+        # Add Ava's reply
+        st.session_state.chat_history.append(bot_reply)
+
+        # Clear the input
+        st.experimental_rerun()
 
     if st.button("✅ Continue"):
         st.success(f"You selected {st.session_state.mode.upper()} mode and {st.session_state.language} language.")
