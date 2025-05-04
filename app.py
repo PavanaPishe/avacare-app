@@ -99,21 +99,29 @@ elif st.session_state.chat_state == "ask_identity":
             st.session_state.is_returning = False
             st.session_state.chat_state = "get_new_info"
 
-# --- STEP 5A: Returning Patient ---
+# --- STEP 5A: RETURNING PATIENT ---
 elif st.session_state.chat_state == "get_returning_info":
     st.subheader("Please provide your details")
-    st.session_state.name = st.text_input("Your Full Name:")
-    st.session_state.patient_id = st.text_input("Your Patient ID (e.g., AVP-1054):")
 
-    if st.session_state.name and st.session_state.patient_id:
-        sheet = connect_to_google_sheet()
-        records = sheet.get_all_records()
-        match = next((rec for rec in records if rec["Patient_ID"] == st.session_state.patient_id), None)
-        if match:
-            st.success(f"Welcome back, {st.session_state.name}! You're verified.")
+    name_input = st.text_input("Your Full Name:", value=st.session_state.name)
+    id_input = st.text_input("Your Patient ID (e.g., AVP-1054):", value=st.session_state.patient_id)
+
+    if name_input and id_input:
+        st.session_state.name = name_input
+        st.session_state.patient_id = id_input
+
+        match = patients_df[patients_df["Patient_ID"] == id_input]
+
+        if not match.empty:
+            st.success(f"Welcome back, {st.session_state.name}. Your identity has been verified.")
+            st.session_state.chat_state = "main_menu"
+            st.rerun()
         else:
-            st.error("Patient ID not found. Please try again.")
+            st.error("Patient ID not found. Please check your input and try again.")
+
     go_back_to("ask_identity")
+
+
 
 # --- STEP 5B: New Patient ---
 elif st.session_state.chat_state == "get_new_info":
@@ -143,17 +151,11 @@ elif st.session_state.chat_state == "main_menu":
         st.rerun()
 
     elif option == "View Appointment History":
-        st.write("This section will display past and upcoming appointments. (Coming soon)")
+        st.info("This section will display past and upcoming appointments. (Coming soon)")
 
     elif option == "Update Contact Information":
-        st.write("Feature to update your contact or location details will be available soon.")
+        st.info("Feature to update your contact or location details will be available soon.")
 
     elif option == "Exit Session":
         st.success("Thank you for using AVACARE. You may now close the session.")
-
-if not match.empty:
-    st.success(f"Welcome back, {st.session_state.name}. Your identity has been verified.")
-    st.session_state.chat_state = "main_menu"
-    st.rerun()
-
 
