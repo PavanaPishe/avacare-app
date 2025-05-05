@@ -164,97 +164,71 @@ elif st.session_state.chat_state == "main_menu":
         else:
             st.info("This feature is coming soon!")
         st.rerun()
-# --- Step 7: Booking Flow with Symptom-Based Recommendation ---
+# --- Step 7: Booking Flow with Symptom Mapping ---
 elif st.session_state.chat_state == "booking_flow":
-    st.subheader("Book an Appointment")
+    st.subheader("🩺 Book an Appointment")
 
-    # Step 1: Ask for Symptoms
-    symptoms = st.text_input("Please describe your symptom or concern (e.g., toothache, skin rash, cold):")
+    # 1. Ask for symptom
+    if "symptom_collected" not in st.session_state:
+        st.session_state.symptom_collected = False
 
-    if symptoms:
-        # Step 2: Map symptoms to specialties
-        symptom_specialty_map = {
-            "cold": "General Physician",
-            "fever": "General Physician",
-            "cough": "General Physician",
-            "tooth": "Dentist",
-            "teeth": "Dentist",
-            "rash": "Dermatologist",
-            "skin": "Dermatologist",
-            "ear": "ENT Specialist",
-            "throat": "ENT Specialist",
-            "nose": "ENT Specialist",
-            "child": "Pediatrician",
-            "baby": "Pediatrician",
-        }
+    if not st.session_state.symptom_collected:
+        symptom = st.text_input("Please tell me your primary symptom:")
+        if symptom:
+            st.session_state.user_symptom = symptom.lower()
 
-        matched_specialty = "General Physician"  # default fallback
-        for keyword, specialty in symptom_specialty_map.items():
-            if keyword.lower() in symptoms.lower():
-                matched_specialty = specialty
-                break
+            # Simple symptom-to-specialty mapping
+            symptom_map = {
+                "fever": "General Physician",
+                "cold": "General Physician",
+                "cough": "General Physician",
+                "toothache": "Dentist",
+                "skin rash": "Dermatologist",
+                "ear pain": "ENT Specialist",
+                "child fever": "Pediatrics",
+                "anxiety": "Psychologist",
+                "pain during periods": "Gynecologist",
+                "back pain": "Orthopedic",
+                "muscle strain": "Physiotherapist"
+            }
 
-        st.info(f"Based on your symptom, we recommend seeing a **{matched_specialty}**.")
+            # Assign recommended specialty
+            recommended_specialty = symptom_map.get(st.session_state.user_symptom, None)
+            if recommended_specialty:
+                st.session_state.recommended_specialty = recommended_specialty
+                st.success(f"Based on your symptom, we recommend you see a **{recommended_specialty}**.")
+                st.session_state.symptom_collected = True
+                st.rerun()
+            else:
+                st.warning("Sorry, we couldn't map your symptom. Please try a different description.")
+        go_back_to("main_menu")
 
-        # Step 3: Load doctor data
+    else:
         doctor_df, availability_df = load_doctor_data()
+        specialty = st.session_state.recommended_specialty
 
         # Filter doctors
-        filtered_doctors = doctor_df[doctor_df["Specialty"] == matched_specialty]
+        filtered_doctors = doctor_df[doctor_df["Specialty"] == specialty]
         doctor_names = filtered_doctors["Doctor_Name"].tolist()
-        selected_doctor = st.selectbox("Select a doctor", doctor_names)
+        selected_doctor = st.selectbox("Choose a doctor:", doctor_names)
 
-        # Step 4: Show available slots
+        # Show open slots
         doctor_id = filtered_doctors[filtered_doctors["Doctor_Name"] == selected_doctor]["Doctor_ID"].values[0]
         available_slots = availability_df[
             (availability_df["Doctor_ID"] == doctor_id) & (availability_df["Slot_Status"] == "Open")
         ]
 
         if not available_slots.empty:
-            slot_options = available_slots["Day"] + " - " + available_slots["Time"]
-            selected_slot = st.selectbox("Choose an available slot", slot_options)
+            slot_options = available_slots["Date"] + " " + available_slots["Start_Time"]
+            selected_slot = st.selectbox("Choose an available time:", slot_options)
 
             if st.button("Confirm Appointment"):
                 st.success(f"✅ Appointment booked with Dr. {selected_doctor} on {selected_slot}")
                 st.session_state.chat_state = "main_menu"
+                st.session_state.symptom_collected = False  # Reset for next time
                 st.rerun()
         else:
             st.warning("No open slots available for this doctor.")
-    
-    go_back_to("main_menu")
-
-# --- Step 8: Doctor Selection & Slot Booking ---
-elif st.session_state.chat_state == "doctor_selection":
-    st.subheader("Select a Doctor")
-
-    doctor_df, availability_df = load_doctor_data()
-
-    # Filter doctors based on recommended specialty
-    specialty = st.session_state.get("selected_specialty", "")
-    filtered_doctors = doctor_df[doctor_df["Specialty"] == specialty]
-
-    if filtered_doctors.empty:
-        st.error(f"No doctors available for the specialty: {specialty}")
         go_back_to("main_menu")
-    else:
-        doctor_names = filtered_doctors["Doctor_Name"].tolist()
-        selected_doctor = st.selectbox("Choose a doctor", doctor_names)
 
-        # Step 3: Available Slots
-        doctor_id = filtered_doctors[filtered_doctors["Doctor_Name"] == selected_doctor]["Doctor_ID"].values[0]
-        available_slots = availability_df[
-            (availability_df["Doctor_ID"] == doctor_id) & (availability_df["Slot_Status"] == "Open")
-        ]
 
-        if not available_slots.empty:
-            slot_options = available_slots["Day"] + " - " + available_slots["Time"]
-            selected_slot = st.selectbox("Choose an available slot", slot_options)
-
-            if st.button("Confirm Appointment"):
-                st.success(f"✅ Appointment booked with Dr. {selected_doctor} on {selected_slot}")
-                st.session_state.chat_state = "main_menu"
-                st.rerun()
-        else:
-            st.warning("⚠️ No open slots available for this doctor.")
-
-        go_back_to("main_menu")
