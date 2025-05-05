@@ -295,79 +295,22 @@ elif st.session_state.chat_state == "payment_page":
 
     st.write("To confirm your appointment, please pay a **25% token** upfront.")
 
-    selected_mode = st.radio(
+    st.session_state.selected_payment_mode = st.radio(
         "Choose a Payment Mode",
         ["UPI", "Net Banking", "Credit Card", "Debit Card", "PayPal", "Apple Pay", "Insurance Portal"]
     )
     paid = st.checkbox("✅ I have completed the 25% payment.")
 
     if paid:
-        from datetime import datetime
-        from io import BytesIO
-        from reportlab.lib.pagesizes import A4
-        from reportlab.pdfgen import canvas
-
-        # Generate timestamp
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-        # Generate PDF confirmation
-        def generate_pdf(name, patient_id, doctor, specialty, slot, mode, time):
-            buffer = BytesIO()
-            c = canvas.Canvas(buffer, pagesize=A4)
-            width, height = A4
-
-            try:
-                logo_path = "avacare_logo.png"
-                c.drawImage(logo_path, 40, height - 100, width=120, preserveAspectRatio=True)
-            except:
-                pass  # Skip logo if not found
-
-            c.setFont("Helvetica-Bold", 18)
-            c.drawCentredString(width / 2, height - 130, "Appointment Confirmation")
-
-            c.setFont("Helvetica", 12)
-            y = height - 170
-            details = [
-                f"Patient Name      : {name}",
-                f"Patient ID        : {patient_id}",
-                f"Doctor Name       : Dr. {doctor}",
-                f"Specialty         : {specialty}",
-                f"Appointment Slot  : {slot}",
-                f"Payment Mode      : {mode}",
-                f"Payment Time      : {time}",
-                "-" * 45,
-                "Thank you for using AVACARE!"
-            ]
-            for line in details:
-                c.drawString(60, y, line)
-                y -= 20
-
-            c.save()
-            buffer.seek(0)
-            return buffer
-
-        pdf_buffer = generate_pdf(
-            st.session_state.name,
-            st.session_state.patient_id,
-            st.session_state.selected_doctor,
-            st.session_state.recommended_specialty,
-            st.session_state.selected_slot,
-            selected_mode,
-            timestamp
-        )
-
-        st.success(f"✅ Payment received! Appointment with Dr. {st.session_state.selected_doctor} is confirmed.")
-        st.download_button(
-            label="📥 Download PDF Confirmation",
-            data=pdf_buffer,
-            file_name=f"Appointment_{st.session_state.patient_id}.pdf",
-            mime="application/pdf"
-        )
-
-        st.session_state.chat_state = "main_menu"
+        # Save the chat state to move to confirmation
+        st.session_state.chat_state = "confirmation_page"
         st.rerun()
+    else:
+        st.warning("Please check the box after completing payment to continue.")
 
-    # --- Step 10: Appointment Confirmation ---
+    go_back_to("doctor_selection")
+
+# --- Step 10: Appointment Confirmation ---
 elif st.session_state.chat_state == "confirmation_page":
     st.balloons()
     st.subheader("✅ Appointment Confirmed!")
@@ -383,11 +326,18 @@ elif st.session_state.chat_state == "confirmation_page":
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
 
+    # Optional logo (skip if not found)
+    try:
+        logo_path = "avacare_logo.png"
+        c.drawImage(logo_path, 40, height - 100, width=120, preserveAspectRatio=True)
+    except:
+        pass
+
     c.setFont("Helvetica-Bold", 18)
-    c.drawCentredString(width / 2, height - 50, "AVACARE Appointment Confirmation")
+    c.drawCentredString(width / 2, height - 130, "Appointment Confirmation")
 
     c.setFont("Helvetica", 12)
-    y = height - 100
+    y = height - 170
     details = [
         f"Patient Name     : {st.session_state.name}",
         f"Patient ID       : {st.session_state.patient_id}",
@@ -416,8 +366,3 @@ elif st.session_state.chat_state == "confirmation_page":
 
     go_back_to("main_menu")
 
-
-    else:
-        st.warning("Please check the box after completing payment to continue.")
-
-    go_back_to("doctor_selection")
