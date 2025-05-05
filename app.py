@@ -274,10 +274,6 @@ elif st.session_state.chat_state == "doctor_selection":
             st.warning("No available slots.")
         go_back_to("main_menu")
 
-if st.button("Confirm Appointment"):
-    from datetime import datetime
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
     confirmation_text = (
         f"--- Appointment Confirmation ---\n"
         f"Patient Name     : {st.session_state.name}\n"
