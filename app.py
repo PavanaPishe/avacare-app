@@ -281,6 +281,47 @@ elif st.session_state.chat_state == "doctor_selection":
 elif st.session_state.chat_state == "payment_page":
     st.subheader("💳 Token Payment")
 
+    from datetime import datetime
+    from reportlab.lib.pagesizes import A4
+    from reportlab.pdfgen import canvas
+    from io import BytesIO
+
+    def generate_confirmation_pdf(name, patient_id, doctor_name, specialty, slot, payment_mode, timestamp):
+        buffer = BytesIO()
+        c = canvas.Canvas(buffer, pagesize=A4)
+        width, height = A4
+
+        logo_path = "avacare_logo.png"  # Place this in your working directory
+        try:
+            c.drawImage(logo_path, 40, height - 100, width=120, preserveAspectRatio=True)
+        except:
+            pass  # If image not found, continue without crashing
+
+        c.setFont("Helvetica-Bold", 18)
+        c.drawCentredString(width / 2, height - 130, "Appointment Confirmation")
+
+        c.setFont("Helvetica", 12)
+        y = height - 170
+        lines = [
+            f"Patient Name      : {name}",
+            f"Patient ID        : {patient_id}",
+            f"Doctor Name       : Dr. {doctor_name}",
+            f"Specialty         : {specialty}",
+            f"Appointment Slot  : {slot}",
+            f"Payment Mode      : {payment_mode}",
+            f"Booking Time      : {timestamp}",
+            "-" * 45,
+            "Thank you for using AVACARE!"
+        ]
+        for line in lines:
+            c.drawString(60, y, line)
+            y -= 20
+
+        c.save()
+        buffer.seek(0)
+        return buffer
+
+    # Load patient data
     sheet = connect_to_google_sheet()
     patients_df = load_patient_dataframe(sheet)
 
@@ -297,29 +338,24 @@ elif st.session_state.chat_state == "payment_page":
     paid = st.checkbox("I have completed the 25% token payment.")
 
     if paid:
-        from datetime import datetime
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
         st.success("✅ Payment acknowledged. Your appointment is confirmed!")
 
-        confirmation_text = (
-            f"--- Appointment Confirmation ---\n"
-            f"Patient Name     : {st.session_state.name}\n"
-            f"Patient ID       : {st.session_state.patient_id}\n"
-            f"Doctor Name      : Dr. {st.session_state.selected_doctor}\n"
-            f"Specialty        : {st.session_state.recommended_specialty}\n"
-            f"Appointment Slot : {st.session_state.selected_slot}\n"
-            f"Payment Mode     : {selected_mode}\n"
-            f"Booked At        : {timestamp}\n"
-            f"------------------------------\n"
-            f"Thank you for using AVACARE!"
+        pdf_buffer = generate_confirmation_pdf(
+            st.session_state.name,
+            st.session_state.patient_id,
+            st.session_state.selected_doctor,
+            st.session_state.recommended_specialty,
+            st.session_state.selected_slot,
+            selected_mode,
+            timestamp
         )
 
         st.download_button(
-            label="📥 Download Payment Receipt",
-            data=confirmation_text,
-            file_name=f"TokenReceipt_{st.session_state.patient_id}.txt",
-            mime="text/plain"
+            label="📥 Download PDF Confirmation",
+            data=pdf_buffer,
+            file_name=f"Appointment_{st.session_state.patient_id}.pdf",
+            mime="application/pdf"
         )
 
         st.session_state.chat_state = "main_menu"
@@ -328,6 +364,3 @@ elif st.session_state.chat_state == "payment_page":
         st.warning("Please check the box after completing payment to continue.")
 
     go_back_to("doctor_selection")
-
-
-
