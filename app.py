@@ -37,7 +37,7 @@ def load_doctor_data():
 
 # --- UI Setup ---
 st.set_page_config(page_title="AVACARE Assistant", page_icon="💼")
-st.markdown("<h1 style='font-family: Arial; color: #002B5B;'>AVACARE Virtual Assistant</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='font-family: Arial; color: #002B5B;'>Hey! My name is AVA!</h1>", unsafe_allow_html=True)
 
 if "chat_state" not in st.session_state:
     st.session_state.chat_state = "choose_mode"
@@ -164,50 +164,65 @@ elif st.session_state.chat_state == "main_menu":
         else:
             st.info("This feature is coming soon!")
         st.rerun()
-# --- Step 7: Symptom-Based Booking Flow ---
+# --- Step 7: Booking Flow with Symptom-Based Recommendation ---
 elif st.session_state.chat_state == "booking_flow":
-    st.subheader("Let's help you find the right doctor.")
-    
-    # Step 1: Get symptoms from user
-    symptoms_input = st.text_input("Please briefly describe your symptoms (e.g., headache, tooth pain, skin rash):")
+    st.subheader("Book an Appointment")
 
-    if symptoms_input:
-        # Step 2: Simple symptom to specialty mapping
+    # Step 1: Ask for Symptoms
+    symptoms = st.text_input("Please describe your symptom or concern (e.g., toothache, skin rash, cold):")
+
+    if symptoms:
+        # Step 2: Map symptoms to specialties
         symptom_specialty_map = {
+            "cold": "General Physician",
             "fever": "General Physician",
             "cough": "General Physician",
-            "headache": "General Physician",
             "tooth": "Dentist",
             "teeth": "Dentist",
-            "bleeding gums": "Dentist",
             "rash": "Dermatologist",
-            "itching": "Dermatologist",
             "skin": "Dermatologist",
             "ear": "ENT Specialist",
-            "nose": "ENT Specialist",
             "throat": "ENT Specialist",
-            "cold": "ENT Specialist",
+            "nose": "ENT Specialist",
             "child": "Pediatrician",
-            "baby": "Pediatrician"
+            "baby": "Pediatrician",
         }
 
-        # Step 3: Match user input to specialty
-        matched_specialties = []
+        matched_specialty = "General Physician"  # default fallback
         for keyword, specialty in symptom_specialty_map.items():
-            if keyword.lower() in symptoms_input.lower():
-                matched_specialties.append(specialty)
+            if keyword.lower() in symptoms.lower():
+                matched_specialty = specialty
+                break
 
-        matched_specialties = list(set(matched_specialties))  # Remove duplicates
+        st.info(f"Based on your symptom, we recommend seeing a **{matched_specialty}**.")
 
-        if not matched_specialties:
-            st.warning("Sorry, we couldn't determine the right specialty. Please describe differently or choose manually.")
+        # Step 3: Load doctor data
+        doctor_df, availability_df = load_doctor_data()
+
+        # Filter doctors
+        filtered_doctors = doctor_df[doctor_df["Specialty"] == matched_specialty]
+        doctor_names = filtered_doctors["Doctor_Name"].tolist()
+        selected_doctor = st.selectbox("Select a doctor", doctor_names)
+
+        # Step 4: Show available slots
+        doctor_id = filtered_doctors[filtered_doctors["Doctor_Name"] == selected_doctor]["Doctor_ID"].values[0]
+        available_slots = availability_df[
+            (availability_df["Doctor_ID"] == doctor_id) & (availability_df["Slot_Status"] == "Open")
+        ]
+
+        if not available_slots.empty:
+            slot_options = available_slots["Day"] + " - " + available_slots["Time"]
+            selected_slot = st.selectbox("Choose an available slot", slot_options)
+
+            if st.button("Confirm Appointment"):
+                st.success(f"✅ Appointment booked with Dr. {selected_doctor} on {selected_slot}")
+                st.session_state.chat_state = "main_menu"
+                st.rerun()
         else:
-            st.success(f"Based on your symptoms, we recommend consulting a {matched_specialties[0]}")
-            st.session_state.selected_specialty = matched_specialties[0]
-            st.session_state.chat_state = "doctor_selection"
-            st.rerun()
-
+            st.warning("No open slots available for this doctor.")
+    
     go_back_to("main_menu")
+
 # --- Step 8: Doctor Selection & Slot Booking ---
 elif st.session_state.chat_state == "doctor_selection":
     st.subheader("Select a Doctor")
