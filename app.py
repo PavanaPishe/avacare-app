@@ -176,12 +176,20 @@ elif st.session_state.chat_state == "ask_symptoms":
             "fever": "General Physician",
             "cold": "General Physician",
             "cough": "General Physician",
-            "toothache": "Dentist",
+            "headache": "General Physician",
+            "tooth": "Dentist",
+            "teeth": "Dentist",
+            "cavity": "Dentist",
             "skin rash": "Dermatologist",
+            "acne": "Dermatologist",
+            "pimples": "Dermatologist",
+            "hairfall": "Dermatologist",
             "ear pain": "ENT Specialist",
-            "child fever": "Pediatrics",
+            "nose": "ENT Specialist",
+            "throat": "ENT Specialist",
+            "child fever" "child": "Pediatrics",
             "anxiety": "Psychologist",
-            "pain during periods": "Gynecologist",
+            "pain during periods""pregnancy": "Gynecologist",
             "back pain": "Orthopedic",
             "muscle strain": "Physiotherapist"
         }
@@ -227,3 +235,32 @@ elif st.session_state.chat_state == "doctor_selection":
         else:
             st.warning("No available slots.")
         go_back_to("main_menu")
+
+if st.button("Confirm Appointment"):
+    from datetime import datetime
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    confirmation_text = (
+        f"--- Appointment Confirmation ---\n"
+        f"Patient Name     : {st.session_state.name}\n"
+        f"Patient ID       : {st.session_state.patient_id}\n"
+        f"Doctor Name      : Dr. {selected_doctor}\n"
+        f"Specialty        : {specialty}\n"
+        f"Appointment Slot : {selected_slot}\n"
+        f"Booked At        : {timestamp}\n"
+        f"------------------------------\n"
+        f"Thank you for using AVACARE!"
+    )
+
+    st.success("✅ Appointment booked successfully!")
+
+    # Allow download
+    st.download_button(
+        label="📥 Download Confirmation",
+        data=confirmation_text,
+        file_name=f"Appointment_{st.session_state.patient_id}.txt",
+        mime="text/plain"
+    )
+
+    st.session_state.chat_state = "main_menu"
+
