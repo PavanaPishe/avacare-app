@@ -367,6 +367,56 @@ elif st.session_state.chat_state == "payment_page":
         st.session_state.chat_state = "main_menu"
         st.rerun()
 
+    # --- Step 10: Appointment Confirmation ---
+elif st.session_state.chat_state == "confirmation_page":
+    st.balloons()
+    st.subheader("✅ Appointment Confirmed!")
+    st.success("Your appointment has been successfully confirmed. Please download your confirmation below.")
+
+    from datetime import datetime
+    from io import BytesIO
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.pagesizes import A4
+
+    # Generate PDF confirmation
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+
+    c.setFont("Helvetica-Bold", 18)
+    c.drawCentredString(width / 2, height - 50, "AVACARE Appointment Confirmation")
+
+    c.setFont("Helvetica", 12)
+    y = height - 100
+    details = [
+        f"Patient Name     : {st.session_state.name}",
+        f"Patient ID       : {st.session_state.patient_id}",
+        f"Doctor Name      : Dr. {st.session_state.selected_doctor}",
+        f"Specialty        : {st.session_state.recommended_specialty}",
+        f"Appointment Slot : {st.session_state.selected_slot}",
+        f"Payment Mode     : {st.session_state.selected_payment_mode}",
+        f"Confirmed At     : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    ]
+    for line in details:
+        c.drawString(60, y, line)
+        y -= 20
+
+    c.drawString(60, y - 20, "-" * 50)
+    c.drawString(60, y - 40, "Thank you for choosing AVACARE! 🙌")
+
+    c.save()
+    buffer.seek(0)
+
+    st.download_button(
+        label="📥 Download Confirmation PDF",
+        data=buffer,
+        file_name=f"AVACARE_Confirmation_{st.session_state.patient_id}.pdf",
+        mime="application/pdf"
+    )
+
+    go_back_to("main_menu")
+
+
     else:
         st.warning("Please check the box after completing payment to continue.")
 
