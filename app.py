@@ -29,7 +29,6 @@ def load_patient_dataframe(sheet):
     records = sheet.get_all_records()
     return pd.DataFrame(records)
 
-# Load doctor data once globally
 @st.cache_data
 def load_doctor_data():
     df_profile = pd.read_excel("AVACARE_20_Doctors_Info_and_Availability.xlsx", sheet_name="Doctor_Info")
@@ -40,7 +39,6 @@ def load_doctor_data():
 st.set_page_config(page_title="AVACARE Assistant", page_icon="💼")
 st.markdown("<h1 style='font-family: Arial; color: #002B5B;'>AVACARE Virtual Assistant</h1>", unsafe_allow_html=True)
 
-# --- Session Initialization ---
 if "chat_state" not in st.session_state:
     st.session_state.chat_state = "choose_mode"
     st.session_state.mode = None
@@ -49,13 +47,14 @@ if "chat_state" not in st.session_state:
     st.session_state.name = ""
     st.session_state.patient_id = ""
     st.session_state.is_returning = None
+    st.session_state.selected_action = None
+    st.session_state.symptoms = ""
 
 def go_back_to(state_name):
     if st.button("⬅️ Go Back"):
         st.session_state.chat_state = state_name
         st.rerun()
-
-# --- Step 1: Communication Mode ---
+# --- STEP 1: Communication Mode ---
 if st.session_state.chat_state == "choose_mode":
     st.subheader("Step 1: Choose how you'd like to communicate")
     col1, col2, col3 = st.columns(3)
@@ -72,7 +71,7 @@ if st.session_state.chat_state == "choose_mode":
             st.session_state.mode = "ivr"
             st.session_state.chat_state = "choose_language"
 
-# --- Step 2: Language ---
+# --- STEP 2: Language ---
 elif st.session_state.chat_state == "choose_language":
     st.subheader("Step 2: Select your preferred language")
     st.session_state.language = st.radio("Language", ["English", "Hindi", "Spanish"])
@@ -81,21 +80,22 @@ elif st.session_state.chat_state == "choose_language":
         st.rerun()
     go_back_to("choose_mode")
 
-# --- Step 3: Greeting ---
+# --- STEP 3: Greeting ---
 elif st.session_state.chat_state == "greeting":
     greetings = {
         "English": "Hi, how are you doing today?",
         "Hindi": "नमस्ते, आज आप कैसे हैं?",
         "Spanish": "Hola, ¿cómo estás hoy?"
     }
-    st.subheader("Conversation")
+    st.subheader("AVA Assistant")
     st.markdown(f"<div style='font-family: Verdana; font-size: 16px;'>{greetings[st.session_state.language]}</div>", unsafe_allow_html=True)
     user_reply = st.text_input("Your Response:")
     if user_reply:
+        st.session_state.chat_history.append(f"You: {user_reply}")
         st.session_state.chat_state = "ask_identity"
         st.rerun()
 
-# --- Step 4: Returning/New ---
+# --- STEP 4: Ask if Returning ---
 elif st.session_state.chat_state == "ask_identity":
     st.subheader("Are you a returning patient?")
     col1, col2 = st.columns(2)
@@ -108,12 +108,12 @@ elif st.session_state.chat_state == "ask_identity":
             st.session_state.is_returning = False
             st.session_state.chat_state = "get_new_info"
 
-# --- Step 5A: Returning Patient ---
+# --- STEP 5A: Returning Patient Verification ---
 elif st.session_state.chat_state == "get_returning_info":
     sheet = connect_to_google_sheet()
     patients_df = load_patient_dataframe(sheet)
 
-    st.subheader("Please provide your details")
+    st.subheader("Verify Your Identity")
     name_input = st.text_input("Full Name:", value=st.session_state.name)
     id_input = st.text_input("Patient ID (e.g., AVP-1054):", value=st.session_state.patient_id)
 
@@ -129,78 +129,117 @@ elif st.session_state.chat_state == "get_returning_info":
             st.error("Patient ID not found.")
     go_back_to("ask_identity")
 
-# --- Step 5B: New Patient ---
+# --- STEP 5B: New Patient Registration ---
 elif st.session_state.chat_state == "get_new_info":
-    st.subheader("Register as a new patient")
+    st.subheader("Register as a New Patient")
     name_input = st.text_input("Full Name:")
     if name_input:
         sheet = connect_to_google_sheet()
         new_id = register_new_patient(sheet, name_input)
         st.session_state.name = name_input
         st.session_state.patient_id = new_id
-        st.success(f"Registered! Your Patient ID is {new_id}")
+        st.success(f"You're registered! Your Patient ID is {new_id}")
         st.session_state.chat_state = "main_menu"
         st.rerun()
     go_back_to("ask_identity")
 
-# --- STEP 6: Enhanced Patient Dashboard ---
+# --- STEP 6: Main Menu After Verification ---
 elif st.session_state.chat_state == "main_menu":
-    st.subheader(f"Welcome, {st.session_state.name} 👋")
-    st.markdown("Please choose what you’d like to do today:")
+    st.subheader(f"Hello, {st.session_state.name} 👋")
+    st.markdown("Please choose what you'd like to do next:")
 
-    option = st.selectbox("Available Actions", [
+    st.session_state.selected_action = st.radio("Available Actions", [
         "📅 Book an Appointment",
-        "🔍 View Upcoming Appointment",
-        "📝 Update Contact Details",
-        "🔁 Reschedule an Appointment",
+        "🧾 View Last Prescription (Coming Soon)",
+        "🔁 Reschedule an Appointment (Coming Soon)",
+        "📝 Update Contact Info (Coming Soon)",
         "🚪 Exit"
     ])
 
-    if option == "📅 Book an Appointment":
-        st.session_state.chat_state = "booking_flow"
+    if st.button("Proceed"):
+        if st.session_state.selected_action == "📅 Book an Appointment":
+            st.session_state.chat_state = "ask_symptoms"
+        elif st.session_state.selected_action == "🚪 Exit":
+            st.success("Thank you for using AVACARE! Stay well.")
+        else:
+            st.info("This feature is coming soon!")
         st.rerun()
-
-    elif option == "🔍 View Upcoming Appointment":
-        st.info("This section will soon show your next scheduled visit details (Date, Time, Doctor).")
-
-    elif option == "📝 Update Contact Details":
-        st.info("Feature to update your phone number or address will be available soon.")
-
-    elif option == "🔁 Reschedule an Appointment":
-        st.info("You'll soon be able to pick another slot and update your booking.")
-
-    elif option == "🚪 Exit":
-        st.success("Thank you for using AVACARE. We wish you good health!")
-
-# --- Step 7: Booking Flow ---
+# --- Step 7: Symptom-Based Booking Flow ---
 elif st.session_state.chat_state == "booking_flow":
-    st.subheader("Book an Appointment")
+    st.subheader("Let's help you find the right doctor.")
+    
+    # Step 1: Get symptoms from user
+    symptoms_input = st.text_input("Please briefly describe your symptoms (e.g., headache, tooth pain, skin rash):")
+
+    if symptoms_input:
+        # Step 2: Simple symptom to specialty mapping
+        symptom_specialty_map = {
+            "fever": "General Physician",
+            "cough": "General Physician",
+            "headache": "General Physician",
+            "tooth": "Dentist",
+            "teeth": "Dentist",
+            "bleeding gums": "Dentist",
+            "rash": "Dermatologist",
+            "itching": "Dermatologist",
+            "skin": "Dermatologist",
+            "ear": "ENT Specialist",
+            "nose": "ENT Specialist",
+            "throat": "ENT Specialist",
+            "cold": "ENT Specialist",
+            "child": "Pediatrician",
+            "baby": "Pediatrician"
+        }
+
+        # Step 3: Match user input to specialty
+        matched_specialties = []
+        for keyword, specialty in symptom_specialty_map.items():
+            if keyword.lower() in symptoms_input.lower():
+                matched_specialties.append(specialty)
+
+        matched_specialties = list(set(matched_specialties))  # Remove duplicates
+
+        if not matched_specialties:
+            st.warning("Sorry, we couldn't determine the right specialty. Please describe differently or choose manually.")
+        else:
+            st.success(f"Based on your symptoms, we recommend consulting a {matched_specialties[0]}")
+            st.session_state.selected_specialty = matched_specialties[0]
+            st.session_state.chat_state = "doctor_selection"
+            st.rerun()
+
+    go_back_to("main_menu")
+# --- Step 8: Doctor Selection & Slot Booking ---
+elif st.session_state.chat_state == "doctor_selection":
+    st.subheader("Select a Doctor")
 
     doctor_df, availability_df = load_doctor_data()
 
-    # Step 1: Choose Specialty
-    specializations = doctor_df["Specialty"].unique()
-    selected_specialty = st.selectbox("Choose a specialization", specializations)
+    # Filter doctors based on recommended specialty
+    specialty = st.session_state.get("selected_specialty", "")
+    filtered_doctors = doctor_df[doctor_df["Specialty"] == specialty]
 
-    # Step 2: Choose Doctor
-    filtered_doctors = doctor_df[doctor_df["Specialty"] == selected_specialty]
-    doctor_names = filtered_doctors["Name"].tolist()
-    selected_doctor = st.selectbox("Select a doctor", doctor_names)
-
-    # Step 3: Available Slots
-    doctor_id = filtered_doctors[filtered_doctors["Name"] == selected_doctor]["Doctor_ID"].values[0]
-    available_slots = availability_df[
-        (availability_df["Doctor_ID"] == doctor_id) & (availability_df["Status"] == "Open")
-    ]
-
-    if not available_slots.empty:
-        slot_options = available_slots["Day"] + " - " + available_slots["Time"]
-        selected_slot = st.selectbox("Choose a slot", slot_options)
-
-        if st.button("Confirm Appointment"):
-            st.success(f"Appointment booked with Dr. {selected_doctor} on {selected_slot}")
-            st.session_state.chat_state = "main_menu"
-            st.rerun()
+    if filtered_doctors.empty:
+        st.error(f"No doctors available for the specialty: {specialty}")
+        go_back_to("main_menu")
     else:
-        st.warning("No slots available for this doctor.")
-    go_back_to("main_menu")
+        doctor_names = filtered_doctors["Doctor_Name"].tolist()
+        selected_doctor = st.selectbox("Choose a doctor", doctor_names)
+
+        # Step 3: Available Slots
+        doctor_id = filtered_doctors[filtered_doctors["Doctor_Name"] == selected_doctor]["Doctor_ID"].values[0]
+        available_slots = availability_df[
+            (availability_df["Doctor_ID"] == doctor_id) & (availability_df["Slot_Status"] == "Open")
+        ]
+
+        if not available_slots.empty:
+            slot_options = available_slots["Day"] + " - " + available_slots["Time"]
+            selected_slot = st.selectbox("Choose an available slot", slot_options)
+
+            if st.button("Confirm Appointment"):
+                st.success(f"✅ Appointment booked with Dr. {selected_doctor} on {selected_slot}")
+                st.session_state.chat_state = "main_menu"
+                st.rerun()
+        else:
+            st.warning("⚠️ No open slots available for this doctor.")
+
+        go_back_to("main_menu")
