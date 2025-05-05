@@ -333,11 +333,11 @@ elif st.session_state.chat_state == "payment_page":
                     print(f"✅ Slot marked as filled for {selected_doctor} on {selected_slot}")
                     return
 
-        mark_slot_as_filled(
-            st.session_state.patient_id,
+               mark_slot_as_filled(
             st.session_state.selected_doctor,
             st.session_state.selected_slot
         )
+
 
         # ✅ Move to confirmation page
         st.session_state.chat_state = "confirmation_page"
