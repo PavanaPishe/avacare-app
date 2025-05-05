@@ -300,4 +300,44 @@ elif st.session_state.chat_state == "doctor_selection":
             st.warning("No available slots.")
         go_back_to("main_menu")
 
+# --- Step 9: Payment Page ---
+elif st.session_state.chat_state == "payment_page":
+    st.subheader("💳 Token Payment")
+
+    sheet = connect_to_google_sheet()
+    patients_df = load_patient_dataframe(sheet)
+
+    # Get payment history for this patient
+    patient_record = patients_df[patients_df["Patient_ID"] == st.session_state.patient_id]
+    if not patient_record.empty:
+        previous_insurance = patient_record.iloc[0].get("Insurance_Type", "Not Provided")
+        previous_payment_mode = patient_record.iloc[0].get("Token_Payment_Mode", "Not Available")
+
+        st.info(f"👤 Insurance Type from last visit: **{previous_insurance}**")
+        st.info(f"💳 Last used payment method: **{previous_payment_mode}**")
+
+    st.write("A token amount of **25%** is required to confirm your appointment.")
+    st.radio("Choose Payment Mode", ["UPI", "Net Banking", "Card", "Wallet"], key="selected_payment_mode")
+    paid = st.checkbox("I have completed the 25% token payment.")
+
+    if paid:
+        st.success("✅ Payment acknowledged. Your appointment is confirmed!")
+        
+        # Optionally update Google Sheet here
+        # sheet.update_cell(row, col, value) ← requires tracking row index, or using batch_update
+
+        st.download_button(
+            label="📥 Download Payment Receipt",
+            data=f"Payment Confirmed for {st.session_state.name}\nAmount: 25% Token\nMode: {st.session_state.selected_payment_mode}",
+            file_name=f"TokenReceipt_{st.session_state.patient_id}.txt",
+            mime="text/plain"
+        )
+        st.session_state.chat_state = "main_menu"
+        st.rerun()
+    else:
+        st.warning("Please check the box after completing payment to continue.")
+
+    go_back_to("doctor_selection")
+
+
 
