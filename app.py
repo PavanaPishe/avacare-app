@@ -225,9 +225,11 @@ elif st.session_state.chat_state == "ask_symptoms":
             "ear pain": "ENT Specialist",
             "nose": "ENT Specialist",
             "throat": "ENT Specialist",
-            "child fever" "child": "Pediatrics",
+            "child fever": "Pediatrics",
+            "child": "Pediatrics",
             "anxiety": "Psychologist",
-            "pain during periods""pregnancy": "Gynecologist",
+            "pain during periods": "Gynecologist",
+            "pregnancy": "Gynecologist",
             "back pain": "Orthopedic",
             "muscle strain": "Physiotherapist"
         }
@@ -267,34 +269,9 @@ elif st.session_state.chat_state == "doctor_selection":
             selected_slot = st.selectbox("Choose a slot", slot_options)
 
             if st.button("Confirm Appointment"):
-                # Generate timestamp
-                from datetime import datetime
-                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-                # Confirmation message
-                confirmation_text = (
-                    f"--- Appointment Confirmation ---\n"
-                    f"Patient Name     : {st.session_state.name}\n"
-                    f"Patient ID       : {st.session_state.patient_id}\n"
-                    f"Doctor Name      : Dr. {selected_doctor}\n"
-                    f"Specialty        : {specialty}\n"
-                    f"Appointment Slot : {selected_slot}\n"
-                    f"Booked At        : {timestamp}\n"
-                    f"------------------------------\n"
-                    f"Thank you for using AVACARE!"
-                )
-
-                # Show success and allow download
-                st.success(f"✅ Appointment booked with Dr. {selected_doctor} on {selected_slot}")
-                st.download_button(
-                    label="📥 Download Confirmation",
-                    data=confirmation_text,
-                    file_name=f"Appointment_{st.session_state.patient_id}.txt",
-                    mime="text/plain"
-                )
-
-                # Reset chat state
-                st.session_state.chat_state = "main_menu"
+                st.session_state.selected_doctor = selected_doctor
+                st.session_state.selected_slot = selected_slot
+                st.session_state.chat_state = "payment_page"
                 st.rerun()
         else:
             st.warning("No available slots.")
@@ -307,7 +284,6 @@ elif st.session_state.chat_state == "payment_page":
     sheet = connect_to_google_sheet()
     patients_df = load_patient_dataframe(sheet)
 
-    # Get payment history for this patient
     patient_record = patients_df[patients_df["Patient_ID"] == st.session_state.patient_id]
     if not patient_record.empty:
         previous_insurance = patient_record.iloc[0].get("Insurance_Type", "Not Provided")
@@ -317,21 +293,35 @@ elif st.session_state.chat_state == "payment_page":
         st.info(f"💳 Last used payment method: **{previous_payment_mode}**")
 
     st.write("A token amount of **25%** is required to confirm your appointment.")
-    st.radio("Choose Payment Mode", ["UPI", "Net Banking", "Card", "Wallet"], key="selected_payment_mode")
+    selected_mode = st.radio("Choose Payment Mode", ["UPI", "Net Banking", "Card", "Wallet"])
     paid = st.checkbox("I have completed the 25% token payment.")
 
     if paid:
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
         st.success("✅ Payment acknowledged. Your appointment is confirmed!")
-        
-        # Optionally update Google Sheet here
-        # sheet.update_cell(row, col, value) ← requires tracking row index, or using batch_update
+
+        confirmation_text = (
+            f"--- Appointment Confirmation ---\n"
+            f"Patient Name     : {st.session_state.name}\n"
+            f"Patient ID       : {st.session_state.patient_id}\n"
+            f"Doctor Name      : Dr. {st.session_state.selected_doctor}\n"
+            f"Specialty        : {st.session_state.recommended_specialty}\n"
+            f"Appointment Slot : {st.session_state.selected_slot}\n"
+            f"Payment Mode     : {selected_mode}\n"
+            f"Booked At        : {timestamp}\n"
+            f"------------------------------\n"
+            f"Thank you for using AVACARE!"
+        )
 
         st.download_button(
             label="📥 Download Payment Receipt",
-            data=f"Payment Confirmed for {st.session_state.name}\nAmount: 25% Token\nMode: {st.session_state.selected_payment_mode}",
+            data=confirmation_text,
             file_name=f"TokenReceipt_{st.session_state.patient_id}.txt",
             mime="text/plain"
         )
+
         st.session_state.chat_state = "main_menu"
         st.rerun()
     else:
