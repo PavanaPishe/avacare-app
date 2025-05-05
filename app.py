@@ -401,3 +401,41 @@ elif st.session_state.chat_state == "confirmation_page":
 
     go_back_to("main_menu")
 
+def mark_slot_as_filled(doctor_name, slot_datetime):
+    import gspread
+    from oauth2client.service_account import ServiceAccountCredentials
+
+    # Connect to Google Sheet
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service_account"], scope)
+    client = gspread.authorize(creds)
+
+    # ✅ OPEN THE LIVE DOCTOR SHEET (use new sheet key)
+    sheet = client.open_by_key("1VVMGuKfVLoKlvEF6DIfnDqAvWCJ-A_fUialc_yUf8w")
+    availability_sheet = sheet.worksheet("Doctor_Availability")
+
+    all_rows = availability_sheet.get_all_values()
+    headers = all_rows[0]
+    rows = all_rows[1:]
+
+    # Column indexes
+    doc_idx = headers.index("Doctor_Name")
+    date_idx = headers.index("Date")
+    time_idx = headers.index("Start_Time")
+    status_idx = headers.index("Slot_Status")
+
+    # Break date + time
+    if " " in slot_datetime:
+        slot_date, slot_time = slot_datetime.split(" ")
+    else:
+        return
+
+    for i, row in enumerate(rows):
+        if row[doc_idx] == doctor_name and row[date_idx] == slot_date and row[time_idx] == slot_time:
+            availability_sheet.update_cell(i + 2, status_idx + 1, "Filled")
+            print(f"✅ Slot marked as Filled for {doctor_name} on {slot_datetime}")
+            return
+
+    print(f"⚠️ Could not find matching row for {doctor_name} on {slot_datetime}")
+
+
