@@ -244,6 +244,42 @@ elif st.session_state.chat_state == "ask_symptoms":
             st.warning("Sorry, we couldn't map your symptom. Try again or go back.")
     go_back_to("main_menu")
 
+
+# ✅ ✅ ✅ Move this function **here**, before it's used in Step 9!
+def mark_slot_as_filled(doctor_name, slot_datetime):
+    import gspread
+    from oauth2client.service_account import ServiceAccountCredentials
+
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service_account"], scope)
+    client = gspread.authorize(creds)
+
+    sheet = client.open_by_key("1VVMGuKfVLoKlvEF6DIfnDqAvWCJ-A_fUialc_yUf8w")
+    availability_sheet = sheet.worksheet("Doctor_Availability")
+
+    all_rows = availability_sheet.get_all_values()
+    headers = all_rows[0]
+    rows = all_rows[1:]
+
+    doc_idx = headers.index("Doctor_Name")
+    date_idx = headers.index("Date")
+    time_idx = headers.index("Start_Time")
+    status_idx = headers.index("Slot_Status")
+
+    if " " in slot_datetime:
+        slot_date, slot_time = slot_datetime.split(" ")
+    else:
+        return
+
+    for i, row in enumerate(rows):
+        if row[doc_idx] == doctor_name and row[date_idx] == slot_date and row[time_idx] == slot_time:
+            availability_sheet.update_cell(i + 2, status_idx + 1, "Filled")
+            print(f"✅ Slot marked as filled for {doctor_name} on {slot_datetime}")
+            return
+
+    print(f"⚠️ Could not find matching row for {doctor_name} on {slot_datetime}")
+
+
 # --- Step 8: Doctor Selection and Booking ---
 elif st.session_state.chat_state == "doctor_selection":
     st.subheader("Select a Doctor and Book Slot")
@@ -277,11 +313,11 @@ elif st.session_state.chat_state == "doctor_selection":
             st.warning("No available slots.")
         go_back_to("main_menu")
 
+
 # --- Step 9: Payment Page ---
 elif st.session_state.chat_state == "payment_page":
     st.subheader("💳 Token Payment")
 
-    # Load patient data
     sheet = connect_to_google_sheet()
     patients_df = load_patient_dataframe(sheet)
 
@@ -302,13 +338,11 @@ elif st.session_state.chat_state == "payment_page":
     paid = st.checkbox("✅ I have completed the 25% payment.")
 
     if paid:
-        # ✅ Call this function to update Google Sheet
+        # Call the now-visible function here
         mark_slot_as_filled(
             st.session_state.selected_doctor,
             st.session_state.selected_slot
         )
-
-        # ✅ Move to confirmation page
         st.session_state.chat_state = "confirmation_page"
         st.rerun()
     else:
@@ -369,39 +403,3 @@ elif st.session_state.chat_state == "confirmation_page":
     )
 
     go_back_to("main_menu")
-
-# --- Function: Mark slot as filled in Google Sheet ---
-def mark_slot_as_filled(doctor_name, slot_datetime):
-    import gspread
-    from oauth2client.service_account import ServiceAccountCredentials
-
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service_account"], scope)
-    client = gspread.authorize(creds)
-
-    # Use updated Google Sheet key for doctor data
-    sheet = client.open_by_key("1VVMGuKfVLoKlvEF6DIfnDqAvWCJ-A_fUialc_yUf8w")
-    availability_sheet = sheet.worksheet("Doctor_Availability")
-
-    all_rows = availability_sheet.get_all_values()
-    headers = all_rows[0]
-    rows = all_rows[1:]
-
-    # Column indexes
-    doc_idx = headers.index("Doctor_Name")
-    date_idx = headers.index("Date")
-    time_idx = headers.index("Start_Time")
-    status_idx = headers.index("Slot_Status")
-
-    if " " in slot_datetime:
-        slot_date, slot_time = slot_datetime.split(" ")
-    else:
-        return
-
-    for i, row in enumerate(rows):
-        if row[doc_idx] == doctor_name and row[date_idx] == slot_date and row[time_idx] == slot_time:
-            availability_sheet.update_cell(i + 2, status_idx + 1, "Filled")
-            print(f"✅ Slot marked as filled for {doctor_name} on {slot_datetime}")
-            return
-
-    print(f"⚠️ Could not find matching row for {doctor_name} on {slot_datetime}")
