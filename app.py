@@ -310,6 +310,13 @@ elif st.session_state.chat_state == "payment_page":
 
     go_back_to("doctor_selection")
 
+mark_slot_as_filled(
+    st.session_state.patient_id,
+    st.session_state.selected_doctor,
+    st.session_state.selected_slot
+)
+
+
 # --- Step 10: Appointment Confirmation ---
 elif st.session_state.chat_state == "confirmation_page":
     st.balloons()
@@ -366,15 +373,43 @@ elif st.session_state.chat_state == "confirmation_page":
 
     go_back_to("main_menu")
 
-# ---Step 11A Update Doctor Slot as "Filled" in Google Sheet ---
-availability_sheet = client.open_by_key("1aFhExzz3_BTNDzJ2h37YqxK6ij8diJCTbAwsPcdJQtM").worksheet("Doctor_Availability")
-slot_records = availability_sheet.get_all_records()
+# --- Step 11A: Mark Slot as Filled ---
+def mark_slot_as_filled(patient_id, selected_doctor, selected_slot):
+    import gspread
+    from oauth2client.service_account import ServiceAccountCredentials
 
-# Find the matching row
-for i, row in enumerate(slot_records):
-    if (row["Doctor_Name"] == st.session_state.selected_doctor and
-        row["Date"] + " " + row["Start_Time"] == st.session_state.selected_slot and
-        row["Slot_Status"].lower() == "open"):
-        availability_sheet.update_cell(i + 2, list(row.keys()).index("Slot_Status") + 1, "Filled")
-        break
+    # Setup Google Sheets access
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service_account"], scope)
+    client = gspread.authorize(creds)
+
+    # Open the correct Google Sheet and worksheet
+    doc = client.open_by_key("1aFhExzz3_BTNDzJ2h37YqxK6ij8diJCTbAwsPcdJQtM")
+    availability_sheet = doc.worksheet("Doctor_Availability")
+
+    # Get all rows
+    all_rows = availability_sheet.get_all_values()
+    headers = all_rows[0]
+    rows = all_rows[1:]
+
+    # Find column indices
+    doctor_idx = headers.index("Doctor_Name")
+    date_idx = headers.index("Date")
+    time_idx = headers.index("Start_Time")
+    status_idx = headers.index("Slot_Status")
+
+    # Extract slot date and time
+    if " " in selected_slot:
+        slot_date, slot_time = selected_slot.split(" ")
+    else:
+        slot_date = slot_time = ""
+
+    # Find and update the matching row
+    for i, row in enumerate(rows):
+        if row[doctor_idx] == selected_doctor and row[date_idx] == slot_date and row[time_idx] == slot_time:
+            availability_sheet.update_cell(i + 2, status_idx + 1, "Filled")  # +2 for header and 1-based index
+            print(f"✅ Slot marked as filled for {selected_doctor} on {selected_slot}")
+            return
+
+    print(f"❌ Could not find a matching slot for {selected_doctor} on {selected_slot}")
 
