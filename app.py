@@ -169,11 +169,12 @@ elif st.session_state.chat_state == "main_menu":
 elif st.session_state.chat_state == "booking_flow":
     st.subheader("Book an Appointment")
 
-    @st.cache_data
-    def load_doctor_data():
-        df_profile = pd.read_excel("AVACARE_20_Doctors_Info_and_Availability.xlsx", sheet_name="Doctor_Profile")
-        df_slots = pd.read_excel("AVACARE_20_Doctors_Info_and_Availability.xlsx", sheet_name="Doctor_Availability")
-        return df_profile, df_slots
+   @st.cache_data
+def load_doctor_data():
+    df_profile = pd.read_excel("AVACARE_20_Doctors_Info_and_Availability.xlsx", sheet_name="Doctor_Info")
+    df_slots = pd.read_excel("AVACARE_20_Doctors_Info_and_Availability.xlsx", sheet_name="Doctor_Availability")
+    return df_profile, df_slots
+
 
     doctor_df, availability_df = load_doctor_data()
 
