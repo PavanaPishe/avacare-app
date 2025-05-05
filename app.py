@@ -130,18 +130,56 @@ elif st.session_state.chat_state == "get_returning_info":
             st.error("❌ Patient ID not found.")
     go_back_to("ask_identity")
 
-# --- Step 5B: New Patient ---
+# --- STEP 5B: New Patient Registration with Full Details ---
 elif st.session_state.chat_state == "get_new_info":
-    st.subheader("Register as a new patient")
-    name_input = st.text_input("Your Full Name:")
-    if name_input:
-        sheet = connect_to_google_sheet()
-        new_id = register_new_patient(sheet, name_input)
-        st.session_state.name = name_input
+    st.subheader("📝 Register as a New Patient")
+
+    sheet = connect_to_google_sheet()
+
+    st.markdown("Please fill in your details below:")
+
+    # Generate a new Patient ID
+    new_id = get_next_patient_id(sheet)
+    st.markdown(f"**Your Patient ID:** {new_id}")
+
+    first_name = st.text_input("First Name")
+    last_name = st.text_input("Last Name")
+    gender = st.selectbox("Gender", ["Male", "Female", "Other"])
+    age = st.number_input("Age", min_value=0, max_value=120, step=1)
+    symptoms = st.text_input("Describe your symptoms")
+    travel_from = st.text_input("Traveling From")
+    appointment_date = st.date_input("Preferred Appointment Date")
+    insurance_type = st.selectbox("Insurance Type", ["Private", "Public", "None"])
+    contact = st.text_input("Contact Number")
+    email = st.text_input("Email Address")
+    emergency_contact_name = st.text_input("Emergency Contact Name")
+    emergency_phone = st.text_input("Emergency Phone Number")
+    preferred_mode = st.radio("Preferred Communication Mode", ["Chat", "Call", "Voice"])
+    preferred_lang = st.selectbox("Preferred Language", ["English", "Hindi", "Spanish"])
+    missed_appointments = st.number_input("Number of Missed Appointments", min_value=0, step=1)
+    risk_category = st.selectbox("Risk Category", ["Low", "Moderate", "High"])
+    token_payment_status = st.radio("Token Payment Status", ["Paid", "Unpaid"])
+    missed_reason = st.text_input("Reason for Previous Missed Appointments (if any)")
+    caregiver_needed = st.radio("Do you need a caregiver's help?", ["Yes", "No"])
+    uber_needed = st.radio("Do you need an Uber Voucher?", ["Yes", "No"])
+    next_appointment = st.date_input("Suggested Next Appointment Date")
+
+    if st.button("Register"):
+        row_data = [
+            new_id, first_name, last_name, gender, age, symptoms, "",  # We'll fill in Suggested Specialty later
+            travel_from, str(appointment_date), insurance_type, contact, email,
+            emergency_contact_name, emergency_phone, preferred_mode, preferred_lang,
+            missed_appointments, risk_category, token_payment_status,
+            missed_reason, caregiver_needed, uber_needed,
+            str(next_appointment), "Fresh"
+        ]
+        sheet.append_row(row_data)
+        st.session_state.name = first_name
         st.session_state.patient_id = new_id
-        st.success(f"You're registered! Your Patient ID is {new_id}")
+        st.success(f"🎉 You're successfully registered! Your Patient ID is {new_id}")
         st.session_state.chat_state = "main_menu"
         st.rerun()
+
     go_back_to("ask_identity")
 
 # --- Step 6: Main Menu ---
