@@ -366,3 +366,15 @@ elif st.session_state.chat_state == "confirmation_page":
 
     go_back_to("main_menu")
 
+# ---Step 11A Update Doctor Slot as "Filled" in Google Sheet ---
+availability_sheet = client.open_by_key("1aFhExzz3_BTNDzJ2h37YqxK6ij8diJCTbAwsPcdJQtM").worksheet("Doctor_Availability")
+slot_records = availability_sheet.get_all_records()
+
+# Find the matching row
+for i, row in enumerate(slot_records):
+    if (row["Doctor_Name"] == st.session_state.selected_doctor and
+        row["Date"] + " " + row["Start_Time"] == st.session_state.selected_slot and
+        row["Slot_Status"].lower() == "open"):
+        availability_sheet.update_cell(i + 2, list(row.keys()).index("Slot_Status") + 1, "Filled")
+        break
+
