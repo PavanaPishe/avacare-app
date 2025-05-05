@@ -267,34 +267,37 @@ elif st.session_state.chat_state == "doctor_selection":
             selected_slot = st.selectbox("Choose a slot", slot_options)
 
             if st.button("Confirm Appointment"):
+                # Generate timestamp
+                from datetime import datetime
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+                # Confirmation message
+                confirmation_text = (
+                    f"--- Appointment Confirmation ---\n"
+                    f"Patient Name     : {st.session_state.name}\n"
+                    f"Patient ID       : {st.session_state.patient_id}\n"
+                    f"Doctor Name      : Dr. {selected_doctor}\n"
+                    f"Specialty        : {specialty}\n"
+                    f"Appointment Slot : {selected_slot}\n"
+                    f"Booked At        : {timestamp}\n"
+                    f"------------------------------\n"
+                    f"Thank you for using AVACARE!"
+                )
+
+                # Show success and allow download
                 st.success(f"✅ Appointment booked with Dr. {selected_doctor} on {selected_slot}")
+                st.download_button(
+                    label="📥 Download Confirmation",
+                    data=confirmation_text,
+                    file_name=f"Appointment_{st.session_state.patient_id}.txt",
+                    mime="text/plain"
+                )
+
+                # Reset chat state
                 st.session_state.chat_state = "main_menu"
                 st.rerun()
         else:
             st.warning("No available slots.")
         go_back_to("main_menu")
 
-    confirmation_text = (
-        f"--- Appointment Confirmation ---\n"
-        f"Patient Name     : {st.session_state.name}\n"
-        f"Patient ID       : {st.session_state.patient_id}\n"
-        f"Doctor Name      : Dr. {selected_doctor}\n"
-        f"Specialty        : {specialty}\n"
-        f"Appointment Slot : {selected_slot}\n"
-        f"Booked At        : {timestamp}\n"
-        f"------------------------------\n"
-        f"Thank you for using AVACARE!"
-    )
-
-    st.success("✅ Appointment booked successfully!")
-
-    # Allow download
-    st.download_button(
-        label="📥 Download Confirmation",
-        data=confirmation_text,
-        file_name=f"Appointment_{st.session_state.patient_id}.txt",
-        mime="text/plain"
-    )
-
-    st.session_state.chat_state = "main_menu"
 
