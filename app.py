@@ -143,24 +143,34 @@ elif st.session_state.chat_state == "get_new_info":
         st.rerun()
     go_back_to("ask_identity")
 
-# --- Step 6: Patient Dashboard ---
+# --- STEP 6: Enhanced Patient Dashboard ---
 elif st.session_state.chat_state == "main_menu":
-    st.subheader(f"Welcome, {st.session_state.name}")
-    option = st.radio("Options", [
-        "Book an Appointment",
-        "View Appointment History",
-        "Update Contact Information",
-        "Exit"
+    st.subheader(f"Welcome, {st.session_state.name} 👋")
+    st.markdown("Please choose what you’d like to do today:")
+
+    option = st.selectbox("Available Actions", [
+        "📅 Book an Appointment",
+        "🔍 View Upcoming Appointment",
+        "📝 Update Contact Details",
+        "🔁 Reschedule an Appointment",
+        "🚪 Exit"
     ])
-    if option == "Book an Appointment":
+
+    if option == "📅 Book an Appointment":
         st.session_state.chat_state = "booking_flow"
         st.rerun()
-    elif option == "View Appointment History":
-        st.info("This section will soon display your previous and upcoming appointments.")
-    elif option == "Update Contact Information":
-        st.info("Feature coming soon: Update phone number or location.")
-    elif option == "Exit":
-        st.success("Thank you for using AVACARE.")
+
+    elif option == "🔍 View Upcoming Appointment":
+        st.info("This section will soon show your next scheduled visit details (Date, Time, Doctor).")
+
+    elif option == "📝 Update Contact Details":
+        st.info("Feature to update your phone number or address will be available soon.")
+
+    elif option == "🔁 Reschedule an Appointment":
+        st.info("You'll soon be able to pick another slot and update your booking.")
+
+    elif option == "🚪 Exit":
+        st.success("Thank you for using AVACARE. We wish you good health!")
 
 # --- Step 7: Booking Flow ---
 elif st.session_state.chat_state == "booking_flow":
