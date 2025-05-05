@@ -281,6 +281,7 @@ elif st.session_state.chat_state == "doctor_selection":
 elif st.session_state.chat_state == "payment_page":
     st.subheader("💳 Token Payment")
 
+    # Load patient data
     sheet = connect_to_google_sheet()
     patients_df = load_patient_dataframe(sheet)
 
@@ -289,27 +290,28 @@ elif st.session_state.chat_state == "payment_page":
         previous_insurance = patient_record.iloc[0].get("Insurance_Type", "Not Provided")
         previous_payment_mode = patient_record.iloc[0].get("Token_Payment_Mode", "Not Available")
 
-        st.info(f"👤 Insurance Type from last visit: **{previous_insurance}**")
-        st.info(f"💳 Last used payment method: **{previous_payment_mode}**")
+        st.info(f"👤 Last Insurance Type: **{previous_insurance}**")
+        st.info(f"💳 Last Payment Mode: **{previous_payment_mode}**")
 
-    st.markdown("A **25% token payment** is required to confirm your appointment.")
-    
+    st.write("To confirm your appointment, please pay a **25% token** upfront.")
+
     selected_mode = st.radio(
-        "Select Payment Mode",
-        ["UPI", "Net Banking", "Credit Card", "Debit Card", "Wallet", "PayPal", "Apple Pay", "Insurance Portal"]
+        "Choose a Payment Mode",
+        ["UPI", "Net Banking", "Credit Card", "Debit Card", "PayPal", "Apple Pay", "Insurance Portal"]
     )
-    paid = st.checkbox("✅ I have completed the 25% token payment.")
+    paid = st.checkbox("✅ I have completed the 25% payment.")
 
     if paid:
         from datetime import datetime
+        from io import BytesIO
         from reportlab.lib.pagesizes import A4
         from reportlab.pdfgen import canvas
-        from io import BytesIO
 
+        # Generate timestamp
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # Generate PDF buffer
-        def generate_pdf(name, patient_id, doctor_name, specialty, slot, payment_mode, timestamp):
+        # Generate PDF confirmation
+        def generate_pdf(name, patient_id, doctor, specialty, slot, mode, time):
             buffer = BytesIO()
             c = canvas.Canvas(buffer, pagesize=A4)
             width, height = A4
@@ -318,25 +320,25 @@ elif st.session_state.chat_state == "payment_page":
                 logo_path = "avacare_logo.png"
                 c.drawImage(logo_path, 40, height - 100, width=120, preserveAspectRatio=True)
             except:
-                pass  # continue without logo if not found
+                pass  # Skip logo if not found
 
             c.setFont("Helvetica-Bold", 18)
             c.drawCentredString(width / 2, height - 130, "Appointment Confirmation")
 
             c.setFont("Helvetica", 12)
             y = height - 170
-            lines = [
+            details = [
                 f"Patient Name      : {name}",
                 f"Patient ID        : {patient_id}",
-                f"Doctor Name       : Dr. {doctor_name}",
+                f"Doctor Name       : Dr. {doctor}",
                 f"Specialty         : {specialty}",
                 f"Appointment Slot  : {slot}",
-                f"Payment Mode      : {payment_mode}",
-                f"Payment Time      : {timestamp}",
+                f"Payment Mode      : {mode}",
+                f"Payment Time      : {time}",
                 "-" * 45,
                 "Thank you for using AVACARE!"
             ]
-            for line in lines:
+            for line in details:
                 c.drawString(60, y, line)
                 y -= 20
 
@@ -354,9 +356,9 @@ elif st.session_state.chat_state == "payment_page":
             timestamp
         )
 
-        st.success(f"✅ Appointment Confirmed with Dr. {st.session_state.selected_doctor}!")
+        st.success(f"✅ Payment received! Appointment with Dr. {st.session_state.selected_doctor} is confirmed.")
         st.download_button(
-            label="📥 Download Confirmation PDF",
+            label="📥 Download PDF Confirmation",
             data=pdf_buffer,
             file_name=f"Appointment_{st.session_state.patient_id}.pdf",
             mime="application/pdf"
@@ -366,6 +368,6 @@ elif st.session_state.chat_state == "payment_page":
         st.rerun()
 
     else:
-        st.warning("Please check the box after making the payment to proceed.")
+        st.warning("Please check the box after completing payment to continue.")
 
     go_back_to("doctor_selection")
