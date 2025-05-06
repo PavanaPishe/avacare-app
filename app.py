@@ -424,9 +424,6 @@ elif st.session_state.chat_state == "payment":
 
 # --- STEP 4: Confirmation ---
 elif st.session_state.chat_state == "confirmed":
-    if missed_count > 0:
-       st.warning(f"...your missed appointment...")
-
     from io import BytesIO
     from datetime import datetime
     from reportlab.pdfgen import canvas
