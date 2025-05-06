@@ -31,9 +31,19 @@ def load_patient_dataframe(sheet):
 
 @st.cache_data
 def load_doctor_data():
-    df_profile = pd.read_excel("AVACARE_20_Doctors_Info_and_Availability.xlsx", sheet_name="Doctor_Info")
-    df_slots = pd.read_excel("AVACARE_20_Doctors_Info_and_Availability.xlsx", sheet_name="Doctor_Availability")
-    return df_profile, df_slots
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service_account"], scope)
+    client = gspread.authorize(creds)
+
+    sheet = client.open_by_key("1VVMGuKfVLoKlvEF6DIfnDqAvWCJ-A_fUialc_yUf8w")
+    profile_data = sheet.worksheet("Doctor_Info").get_all_records()
+    availability_data = sheet.worksheet("Doctor_Availability").get_all_records()
+
+    df_profile = pd.DataFrame(profile_data)
+    df_availability = pd.DataFrame(availability_data)
+
+    return df_profile, df_availability
+
 
 # --- ✅ Move this here (before it is used) ---
 def mark_slot_as_filled(doctor_name, slot_datetime):
