@@ -309,69 +309,67 @@ elif st.session_state.chat_state == "payment":
 
 # --- STEP 4: Confirmation ---
 elif st.session_state.chat_state == "confirmation":
-    from datetime import datetime
-    from io import BytesIO
-    from reportlab.pdfgen import canvas
-    from reportlab.lib.pagesizes import A4
-
-    sheet = connect_to_patient_sheet()
-    df = load_patient_dataframe(sheet)
-
-    st.balloons()
-    st.subheader("✅ Appointment Confirmed!")
-    st.success("Your appointment has been successfully confirmed. Please download your confirmation below.")
-
-    # --- Smart Feedback Based on History ---
     try:
+        from datetime import datetime
+        from io import BytesIO
+        from reportlab.pdfgen import canvas
+        from reportlab.lib.pagesizes import A4
+
+        sheet = connect_to_patient_sheet()
+        df = load_patient_dataframe(sheet)
+
+        st.balloons()
+        st.subheader("✅ Appointment Confirmed!")
+        st.success("Your appointment has been successfully confirmed.")
+
+        # Feedback Message
         patient = df[df["Patient_ID"] == st.session_state.patient_id].iloc[0]
         last_date = patient.get("Last_Appointment_Date", "Not Available")
         missed = patient.get("Missed_Appointments", "0")
         reason = patient.get("Missed_Appointment_Reason", "")
 
         missed_count = int(str(missed).strip()) if str(missed).strip().isdigit() else 0
-
         if missed_count > 0:
-            st.warning(
-                f"🕒 Hey {st.session_state.name}, I see your last appointment was on **{last_date}**, "
-                f"but it was marked as **missed**.\n\n"
-                f"Reason noted: _'{reason}'_. Let's make sure this one's on track! 😊"
-            )
+            st.warning(f"🕒 Last appointment was on **{last_date}**, but was missed.\n\nReason: _{reason}_")
         else:
-            st.info(f"👏 Well done {st.session_state.name}, you've been punctual with your appointments!")
-    except Exception:
-        st.info("📘 Appointment history not found. Let’s begin a fresh journey!")
+            st.info(f"👏 Great! No missed appointments in your record, {st.session_state.name}.")
 
-    # --- Generate PDF Confirmation ---
-    buffer = BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
-    w, h = A4
-    c.setFont("Helvetica-Bold", 18)
-    c.drawCentredString(w / 2, h - 80, "Appointment Confirmation")
-    c.setFont("Helvetica", 12)
-    y = h - 120
-    details = [
-        f"Patient Name: {st.session_state.name}",
-        f"Patient ID: {st.session_state.patient_id}",
-        f"Doctor: Dr. {st.session_state.selected_doctor}",
-        f"Slot: {st.session_state.selected_slot}",
-        f"Specialty: {st.session_state.recommended_specialty}",
-        f"Payment Mode: {st.session_state.selected_payment_mode}",
-        f"Confirmed At: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-    ]
-    for line in details:
-        c.drawString(60, y, line)
-        y -= 20
-    c.save()
-    buffer.seek(0)
+        # PDF Generation
+        buffer = BytesIO()
+        c = canvas.Canvas(buffer, pagesize=A4)
+        width, height = A4
+        c.setFont("Helvetica-Bold", 18)
+        c.drawCentredString(width / 2, height - 80, "Appointment Confirmation")
 
-    st.download_button(
-        label="📥 Download Confirmation PDF",
-        data=buffer,
-        file_name=f"AVACARE_Confirmation_{st.session_state.patient_id}.pdf",
-        mime="application/pdf"
-    )
+        y = height - 120
+        c.setFont("Helvetica", 12)
+        lines = [
+            f"Patient Name: {st.session_state.name}",
+            f"Patient ID: {st.session_state.patient_id}",
+            f"Doctor: Dr. {st.session_state.selected_doctor}",
+            f"Specialty: {st.session_state.recommended_specialty}",
+            f"Appointment Slot: {st.session_state.selected_slot}",
+            f"Payment Mode: {st.session_state.selected_payment_mode}",
+            f"Confirmed At: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        ]
+        for line in lines:
+            c.drawString(60, y, line)
+            y -= 20
+        c.save()
+        buffer.seek(0)
 
-    go_back_to("main_menu")
+        st.download_button(
+            label="📥 Download Confirmation PDF",
+            data=buffer,
+            file_name=f"AVACARE_Confirmation_{st.session_state.patient_id}.pdf",
+            mime="application/pdf"
+        )
+
+        go_back_to("main_menu")
+
+    except Exception as e:
+        st.error(f"❌ Something went wrong in the confirmation step: `{e}`")
+
 
 
 
