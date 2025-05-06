@@ -143,6 +143,9 @@ def go_back_to(state, key=None):
         st.rerun()
 
 # -------------------- Step-by-step Flow --------------------
+# Initialize session state if not already done
+if 'chat_state' not in st.session_state:
+    st.session_state.chat_state = "choose_mode"
 
 # Step 1: Communication Mode
 if st.session_state.chat_state == "choose_mode":
@@ -151,45 +154,47 @@ if st.session_state.chat_state == "choose_mode":
     if col1.button("Chat"):
         st.session_state.mode = "chat"
         st.session_state.chat_state = "choose_language"
+        st.rerun()
     if col2.button("Voice"):
         st.session_state.mode = "voice"
         st.session_state.chat_state = "choose_language"
+        st.rerun()
     if col3.button("Call"):
         st.session_state.mode = "call"
         st.session_state.chat_state = "choose_language"
+        st.rerun()
 
-# Step 2: Language
+# Step 2: Language Selection
 elif st.session_state.chat_state == "choose_language":
     st.subheader("Step 2: Choose your language")
     st.session_state.language = st.radio("Preferred Language:", ["English", "Hindi", "Spanish"])
     if st.button("Continue"):
-    if st.session_state.mode == "voice":     
-        st.session_state.chat_state = "voice_conversation" else:     
-        st.session_state.chat_state = "greeting"
+        if st.session_state.mode == "voice":
+            st.session_state.chat_state = "voice_conversation"
+        else:
+            st.session_state.chat_state = "greeting"
         st.rerun()
-    go_back_to("choose_mode")
 
-# Step 3: Greeting
+# Step 3: Text Chat Greeting
 elif st.session_state.chat_state == "greeting":
     greetings = {
-        "English": "Hi, how are you doing today?
+        "English": "Hi, how are you doing today?",
         "Hindi": "नमस्ते, आज आप कैसे हैं?",
         "Spanish": "Hola, ¿cómo estás hoy?"
     }
     st.subheader("Conversation")
     st.markdown(f"**AVA:** {greetings[st.session_state.language]}")
-
+    
     user_reply = st.text_input("Your Response:")
     if user_reply:
         st.session_state.chat_state = "ask_identity"
         st.rerun()
 
-    go_back_to("choose_language")  # 🔙 Back to language selection
-
-# --- Voice Conversation Demo ---
+# Step 4: Voice Interaction Demo (Prototype UI)
 elif st.session_state.chat_state == "voice_conversation":
     st.subheader("🎙️ AVA Voice Assistant Demo")
-    
+    st.markdown("This is a **voice-style interaction** prototype. You can simulate voice inputs here.")
+
     st.write("**AVA:** Hi, how are you today?")
     st.text_input("👤 You:", key="vc1", label_visibility="collapsed")
 
@@ -202,20 +207,26 @@ elif st.session_state.chat_state == "voice_conversation":
     st.write("**AVA:** Are you a fresh patient or a returning patient?")
     st.text_input("👤 You:", key="vc4", label_visibility="collapsed")
 
-    st.success("✅ This is a voice chat demo prototype. Real-time audio can be added using mic + Whisper model later.")
+    st.success("✅ This is a prototype for voice interaction. Actual microphone + Whisper AI integration can follow.")
 
+    if st.button("Continue to Next Step"):
+        st.session_state.chat_state = "ask_identity"
+        st.rerun()
 
-
-# Step 4: New or Returning
+# Step 5: Ask Patient Identity
 elif st.session_state.chat_state == "ask_identity":
     st.subheader("Are you a returning patient?")
-    if st.button("Yes"):
+    col1, col2 = st.columns(2)
+    if col1.button("Yes"):
         st.session_state.is_returning = True
         st.session_state.chat_state = "get_returning_info"
-    elif st.button("No"):
+        st.rerun()
+    if col2.button("No"):
         st.session_state.is_returning = False
         st.session_state.chat_state = "get_new_info"
-# --- Step 5A: Returning Patient ---
+        st.rerun()
+
+# Step 5A: Returning Patient Info
 elif st.session_state.chat_state == "get_returning_info":
     sheet = connect_to_patient_sheet()
     df = load_patient_dataframe(sheet)
@@ -230,6 +241,16 @@ elif st.session_state.chat_state == "get_returning_info":
         if not match.empty:
             st.session_state.name = name
             st.session_state.patient_id = pid
+            st.success("✅ Patient verified. Welcome back!")
+            st.session_state.chat_state = "main_menu"
+            st.rerun()
+        else:
+            st.error("❌ No record found. Please try again.")
+
+# Placeholder: New Patient Flow (just a placeholder for now)
+elif st.session_state.chat_state == "get_new_info":
+    st.write("🆕 New patient registration form coming soon...")
+
 
             # ✅ Adjusted field names to your sheet
             last_date = match.iloc[0].get("Last_Appointment_Date", "")
