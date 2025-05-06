@@ -362,10 +362,12 @@ elif st.session_state.chat_state == "confirmation_page":
     from reportlab.pdfgen import canvas
     from reportlab.lib.pagesizes import A4
 
+    # Generate PDF confirmation
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
 
+    # Optional logo (skip if not found)
     try:
         logo_path = "avacare_logo.png"
         c.drawImage(logo_path, 40, height - 100, width=120, preserveAspectRatio=True)
@@ -392,6 +394,7 @@ elif st.session_state.chat_state == "confirmation_page":
 
     c.drawString(60, y - 20, "-" * 50)
     c.drawString(60, y - 40, "Thank you for choosing AVACARE! 🙌")
+
     c.save()
     buffer.seek(0)
 
