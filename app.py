@@ -402,10 +402,10 @@ elif st.session_state.chat_state == "confirmed":
         missed_count = int(str(missed).strip()) if str(missed).strip().isdigit() else 0
 
         if missed_count > 0:
-    st.warning(f"⚠️ I see you had an appointment on **{last_date}** but missed it.\n\n_Reason given:_ **{reason}**\n\nLet’s make sure we meet this time. We're here to help! 😊")
+           st.warning(f"⚠️ I see you had an appointment on **{last_date}** but missed it.\n\n_Reason given:_ **{reason}**\n\nLet’s make sure we meet this time. We're here to help! 😊")
 
-    if "transportation" in reason.lower():
-        st.info(f"🚗 As a token of support, we’re providing you with a **40% Uber voucher** valid until your new appointment on **{selected_slot.split()[0]}**. Safe travels! 🎟️")
+           if "transportation" in reason.lower():
+               st.info(f"🚗 As a token of support, we’re providing you with a **40% Uber voucher** valid until your new appointment on **{selected_slot.split()[0]}**. Safe travels! 🎟️")
 
 
         else:
