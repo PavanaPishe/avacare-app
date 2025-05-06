@@ -24,8 +24,13 @@ def connect_to_doctor_sheet():
     client = gspread.authorize(creds)
     return client.open_by_key("1VVMGuKFvLokIEvFC6DIfnDqAvWCJ-A_fUaiIc_yUf8w")  # Doctor Sheet
 
-def get_weather_forecast(city):
+def get_weather_forecast(city_raw):
     api_key = st.secrets["weather_api"]["api_key"]
+    
+    # Clean city: extract "Dallas" from "New Mathewmouth, Dallas, TX"
+    city_parts = city_raw.split(',')
+    city = city_parts[1].strip() if len(city_parts) > 1 else city_raw.strip()
+
     url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
 
     try:
@@ -37,6 +42,7 @@ def get_weather_forecast(city):
         return f"The current weather in {city} is {weather_desc} with a temperature of {temperature}°C."
     except Exception as e:
         return f"⚠️ Could not fetch weather data: {str(e)}"
+
 
 # -------------------- FUNCTIONS --------------------
 
