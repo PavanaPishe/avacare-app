@@ -536,3 +536,41 @@ elif st.session_state.chat_state == "confirmed":
         )
     else:
         st.error("⚠️ Some appointment details are missing. Please complete booking before downloading the confirmation.")
+
+
+# --- STEP: Voice Conversation Demo ---
+elif st.session_state.chat_state == "voice_demo":
+    st.subheader("🎤 AVACARE Voice Assistant (Prototype Demo)")
+    st.markdown("Each response from the patient is shown as **transcribed voice reply**.")
+
+    conversation = [
+        {"ava": "Hey! I am AVA, how are you today?", "patient": "I'm good, how are you?"},
+        {"ava": "I'm great! How can I help you today?", "patient": "I wanted to book an appointment."},
+        {"ava": "Alrighty then! Let's start with some details of yours!", "patient": "Sure!"},
+        {"ava": "Are you a fresh patient or a returning patient?", "patient": "Fresh."}
+    ]
+
+    for i, exchange in enumerate(conversation):
+        st.markdown(f"**AVA:** {exchange['ava']}")
+        st.markdown(f"**🧑 Patient (transcribed):** {exchange['patient']}")
+        st.markdown("---")
+
+    go_back_to("main_menu")
+        option = st.selectbox("Choose an action", [
+        "📅 Book an Appointment",
+        "🧾 View Last Prescription (Coming Soon)",
+        "🔁 Reschedule an Appointment (Coming Soon)",
+        "📝 Update Contact Info (Coming Soon)",
+        "🎤 Try Voice Assistant",   # 👈 Add this line
+        "🚪 Exit"
+    ])
+        if option == "📅 Book an Appointment":
+        st.session_state.chat_state = "ask_symptoms"
+    elif option == "🎤 Try Voice Assistant":
+        st.session_state.chat_state = "voice_demo"
+    elif option == "🚪 Exit":
+        st.success("Thank you for using AVACARE. Take care!")
+    else:
+        st.info("This feature is coming soon!")
+    st.rerun()
+
