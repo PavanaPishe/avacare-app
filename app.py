@@ -169,7 +169,7 @@ elif st.session_state.chat_state == "greeting":
         st.rerun()
 
 elif st.session_state.chat_state == "voice_conversation":
-    from streamlit_audio_recorder import audio_recorder
+    from streamlit_audiorecorder import audiorecorder
     import openai
     import tempfile
     import os
