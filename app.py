@@ -330,9 +330,9 @@ elif st.session_state.chat_state == "select_doctor":
 
             st.session_state.chat_state = "payment"
             st.rerun()
-            else:
-            st.warning("No open slots.")
-            go_back_to("start")
+else:
+    st.warning("No open slots.")
+    go_back_to("start")
 
 
 # --- STEP 3: Payment ---
