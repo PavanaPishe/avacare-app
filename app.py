@@ -145,7 +145,7 @@ elif st.session_state.chat_state == "ask_identity":
 
 # --- Step 5A: Returning Patient ---
 elif st.session_state.chat_state == "get_returning_info":
-    sheet = connect_to_google_sheet()
+    sheet = connect_to_patient_sheet()
     patients_df = load_patient_dataframe(sheet)
 
     st.subheader("Please enter your details")
