@@ -26,13 +26,9 @@ def connect_to_doctor_sheet():
 
 def get_weather_forecast(city_raw):
     api_key = st.secrets["weather_api"]["api_key"]
-    
-    # Clean city: extract "Dallas" from "New Mathewmouth, Dallas, TX"
     city_parts = city_raw.split(',')
     city = city_parts[1].strip() if len(city_parts) > 1 else city_raw.strip()
-
     url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
-
     try:
         response = requests.get(url)
         response.raise_for_status()
@@ -45,44 +41,32 @@ def get_weather_forecast(city_raw):
 
 def predict_no_show_risk(patient_record, weather_message, selected_slot):
     risk_score = 0
-
-    # Missed appointments count
     missed = int(str(patient_record.get("Missed_Appointments", "0")).strip())
     if missed >= 2:
         risk_score += 2
     elif missed == 1:
         risk_score += 1
-
-    # Risk category
     category = patient_record.get("Risk_Category", "").lower()
     if "high" in category:
         risk_score += 2
     elif "moderate" in category:
         risk_score += 1
-
-    # Weather condition
     if "rain" in weather_message.lower() or "storm" in weather_message.lower():
         risk_score += 2
     elif "snow" in weather_message.lower():
         risk_score += 1
-
-    # Appointment time logic
     try:
         hour = int(selected_slot.split()[1].split(":")[0])
-        if hour < 10:  # early morning slots
+        if hour < 10:
             risk_score += 1
     except:
         pass
-
-    # Final risk message
     if risk_score >= 5:
         return "⚠️ High Risk of No-Show"
     elif risk_score >= 3:
         return "🟠 Moderate Risk of No-Show"
     else:
         return "✅ Low Risk of No-Show"
-
-
 
 # -------------------- FUNCTIONS --------------------
 
@@ -143,11 +127,7 @@ def go_back_to(state, key=None):
         st.rerun()
 
 # -------------------- Step-by-step Flow --------------------
-# Initialize session state if not already done
-if 'chat_state' not in st.session_state:
-    st.session_state.chat_state = "choose_mode"
 
-# Step 1: Communication Mode
 if st.session_state.chat_state == "choose_mode":
     st.subheader("Step 1: Choose your communication mode")
     col1, col2, col3 = st.columns(3)
@@ -164,7 +144,6 @@ if st.session_state.chat_state == "choose_mode":
         st.session_state.chat_state = "choose_language"
         st.rerun()
 
-# Step 2: Language Selection
 elif st.session_state.chat_state == "choose_language":
     st.subheader("Step 2: Choose your language")
     st.session_state.language = st.radio("Preferred Language:", ["English", "Hindi", "Spanish"])
@@ -175,7 +154,6 @@ elif st.session_state.chat_state == "choose_language":
             st.session_state.chat_state = "greeting"
         st.rerun()
 
-# Step 3: Text Chat Greeting
 elif st.session_state.chat_state == "greeting":
     greetings = {
         "English": "Hi, how are you doing today?",
@@ -184,13 +162,11 @@ elif st.session_state.chat_state == "greeting":
     }
     st.subheader("Conversation")
     st.markdown(f"**AVA:** {greetings[st.session_state.language]}")
-    
     user_reply = st.text_input("Your Response:")
     if user_reply:
         st.session_state.chat_state = "ask_identity"
         st.rerun()
 
-# Step 4: Voice Interaction Demo (Prototype UI)
 elif st.session_state.chat_state == "voice_conversation":
     st.subheader("🎙️ AVA Voice Assistant Demo")
     st.markdown("This is a **voice-style interaction** prototype. You can simulate voice inputs here.")
@@ -213,7 +189,6 @@ elif st.session_state.chat_state == "voice_conversation":
         st.session_state.chat_state = "ask_identity"
         st.rerun()
 
-# Step 5: Ask Patient Identity
 elif st.session_state.chat_state == "ask_identity":
     st.subheader("Are you a returning patient?")
     col1, col2 = st.columns(2)
@@ -226,7 +201,6 @@ elif st.session_state.chat_state == "ask_identity":
         st.session_state.chat_state = "get_new_info"
         st.rerun()
 
-# Step 5A: Returning Patient Info
 elif st.session_state.chat_state == "get_returning_info":
     sheet = connect_to_patient_sheet()
     df = load_patient_dataframe(sheet)
@@ -241,25 +215,14 @@ elif st.session_state.chat_state == "get_returning_info":
         if not match.empty:
             st.session_state.name = name
             st.session_state.patient_id = pid
-            st.success("✅ Patient verified. Welcome back!")
-            st.session_state.chat_state = "main_menu"
-            st.rerun()
-        else:
-            st.error("❌ No record found. Please try again.")
-
-# Placeholder: New Patient Flow (just a placeholder for now)
-elif st.session_state.chat_state == "get_new_info":
-    st.write("🆕 New patient registration form coming soon...")
-
 
             # ✅ Adjusted field names to your sheet
             last_date = match.iloc[0].get("Last_Appointment_Date", "")
             missed_count = match.iloc[0].get("Missed_Appointments", 0)
             missed_reason = match.iloc[0].get("Missed_Appointment_Reason", "")
 
-            st.success("✅ Verified.")
+            st.success("✅ Patient verified.")
 
-            # Show message only if missed > 0
             try:
                 if int(missed_count) > 0:
                     st.warning(
@@ -268,7 +231,7 @@ elif st.session_state.chat_state == "get_new_info":
                         "Hope everything’s okay — let’s make sure we don’t miss the next one! 😊"
                     )
             except:
-                pass  # In case conversion fails
+                pass
 
             st.session_state.chat_state = "main_menu"
             st.rerun()
@@ -277,9 +240,6 @@ elif st.session_state.chat_state == "get_new_info":
 
     go_back_to("ask_identity")
 
-
-
-# Step 5B: New Patient
 elif st.session_state.chat_state == "get_new_info":
     st.subheader("📝 Register as a New Patient")
 
@@ -314,6 +274,7 @@ elif st.session_state.chat_state == "get_new_info":
         st.rerun()
 
     go_back_to("ask_identity")
+
 
 
 # --- Step 6: Main Menu ---
