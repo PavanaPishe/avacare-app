@@ -5,11 +5,19 @@ from oauth2client.service_account import ServiceAccountCredentials
 
 # --- Google Sheets Setup ---
 @st.cache_resource
-def connect_to_google_sheet():
+def connect_to_patient_sheet():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service_account"], scope)
     client = gspread.authorize(creds)
-    sheet = client.open_by_key("1aFhExzz3_BTNDzJ2h37YqxK6ij8diJCTbAwsPcdJQtM").sheet1
+    sheet = client.open_by_key("1aFhExzz3_BTNDzJ2h37YqxK6ij8diJCTbAwsPcdJQtM")  # Patient data sheet
+    return sheet
+
+@st.cache_resource
+def connect_to_doctor_sheet():
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service_account"], scope)
+    client = gspread.authorize(creds)
+    sheet = client.open_by_key("1VVMGuKFvLokIEvFC6DIfnDqAvWCJ-A_fUaiIc_yUf8w")  # Doctor sheet
     return sheet
 
 def get_next_patient_id(sheet):
@@ -30,31 +38,13 @@ def load_patient_dataframe(sheet):
     return pd.DataFrame(records)
 
 def load_doctor_data():
-    import gspread
-    from oauth2client.service_account import ServiceAccountCredentials
-
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service_account"], scope)
-    client = gspread.authorize(creds)
-
-    sheet = client.open_by_key("1VVMGuKFvLokIEvFC6DIfnDqAvWCJ-A_fUaiIc_yUf8w")
+    sheet = connect_to_doctor_sheet()
     info = sheet.worksheet("Doctor_Info").get_all_records()
     avail = sheet.worksheet("Doctor_Availability").get_all_records()
-
     return pd.DataFrame(info), pd.DataFrame(avail)
 
-
-
-# --- ✅ Move this here (before it is used) ---
 def mark_slot_as_filled(doctor_name, slot_datetime):
-    import gspread
-    from oauth2client.service_account import ServiceAccountCredentials
-
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service_account"], scope)
-    client = gspread.authorize(creds)
-
-    sheet = client.open_by_key("1VVMGuKfVLoKlvEF6DIfnDqAvWCJ-A_fUialc_yUf8w")
+    sheet = connect_to_doctor_sheet()
     availability_sheet = sheet.worksheet("Doctor_Availability")
 
     all_rows = availability_sheet.get_all_values()
@@ -78,7 +68,6 @@ def mark_slot_as_filled(doctor_name, slot_datetime):
             return
 
     print(f"⚠️ Could not find matching row for {doctor_name} on {slot_datetime}")
-
 
 # --- UI Setup ---
 st.set_page_config(page_title="AVACARE Assistant", page_icon="💼")
