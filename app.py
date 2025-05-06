@@ -355,7 +355,7 @@ elif st.session_state.chat_state == "weather_check":
 
 
     go_back_to("select_doctor", key="go_back_from_weather")  # optional, gives back navigation
-    go_back_to("select_doctor")
+    
 
 # --- STEP 3: Payment ---
 elif st.session_state.chat_state == "payment":
