@@ -130,23 +130,42 @@ elif st.session_state.chat_state == "ask_identity":
         st.session_state.is_returning = False
         st.session_state.chat_state = "get_new_info"
 
-# Step 5A: Returning Patient
+# --- Step 5A: Returning Patient ---
 elif st.session_state.chat_state == "get_returning_info":
     sheet = connect_to_patient_sheet()
     df = load_patient_dataframe(sheet)
+
+    st.subheader("🔁 Welcome Back! Please enter your details")
     name = st.text_input("Full Name")
     pid = st.text_input("Patient ID (e.g., AVP-4001)")
+
     if name and pid:
         match = df[df["Patient_ID"] == pid]
+
         if not match.empty:
             st.success("✅ Verified.")
             st.session_state.name = name
             st.session_state.patient_id = pid
+
+            # 🟢 Check if they missed their last appointment
+            last_date = match.iloc[0].get("Suggested_Next_Appointment", "")
+            missed_count = match.iloc[0].get("Missed_Appointments", 0)
+            missed_reason = match.iloc[0].get("Missed_Reason", "")
+
+            if missed_count and int(missed_count) > 0:
+                st.warning(
+                    f"Hi {name}, I see that your last appointment was on **{last_date}**, "
+                    f"but it was marked as **missed**. You mentioned: _'{missed_reason}'_.\n\n"
+                    "Hope this time it goes smoothly! 😊"
+                )
+
             st.session_state.chat_state = "main_menu"
             st.rerun()
         else:
-            st.error("❌ ID not found.")
+            st.error("❌ Patient ID not found. Please check and try again.")
+
     go_back_to("ask_identity")
+
 
 # Step 5B: New Patient
 elif st.session_state.chat_state == "get_new_info":
