@@ -232,6 +232,7 @@ if st.session_state.chat_state == "start":
             st.rerun()
         else:
             st.warning("Sorry, couldn't map the symptom. Try again.")
+
             
 # --- STEP 2: Doctor Selection ---
 elif st.session_state.chat_state == "select_doctor":
