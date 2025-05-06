@@ -304,7 +304,7 @@ elif st.session_state.chat_state == "select_doctor":
 
     if filtered_doctors.empty:
         st.error("No doctors available.")
-        go_back_to("start")
+        go_back_to("main_menu")
     else:
         selected_doctor = st.selectbox("Choose Doctor", filtered_doctors["Doctor_Name"])
         doctor_id = filtered_doctors[filtered_doctors["Doctor_Name"] == selected_doctor]["Doctor_ID"].values[0]
@@ -326,27 +326,29 @@ elif st.session_state.chat_state == "select_doctor":
                 patients_df = load_patient_dataframe(sheet)
 
                 # --- Weather Check Logic ---
-                patient_record = patients_df[patients_df["Patient_ID"] == st.session_state.patient_id]
-                travel_city = patient_record.iloc[0].get("Traveling_From", "Dallas")
-                weather_message = get_weather_forecast(travel_city)
-                st.write("Weather API Key loaded:", st.secrets["weather_api"]["api_key"])
-                st.info(weather_message)
+                try:
+                    patient_record = patients_df[patients_df["Patient_ID"] == st.session_state.patient_id]
+                    travel_city = patient_record.iloc[0].get("Traveling_From", "Dallas")
+                    weather_message = get_weather_forecast(travel_city)
+                    st.info(f"📍 Travel City: {travel_city}")
+                    st.info(f"🌦️ Weather Forecast: {weather_message}")
 
-            
+                    if "rain" in weather_message.lower() or "storm" in weather_message.lower():
+                        st.warning("🌧️ It looks like the weather may be rough. You may consider booking a **telehealth** consultation or **rescheduling** your appointment to avoid inconvenience.")
+                    elif "snow" in weather_message.lower():
+                        st.warning("❄️ Snowy conditions detected. A remote consultation might be safer.")
+                    else:
+                        st.success("🌤️ Weather looks good for travel. You're all set!")
 
-                if "rain" in weather_message.lower() or "storm" in weather_message.lower():
-                    st.warning("🌧️ It looks like the weather may be rough. You may consider booking a **telehealth** consultation or **rescheduling** your appointment to avoid inconvenience.")
-                elif "snow" in weather_message.lower():
-                    st.warning("❄️ Snowy conditions detected. A remote consultation might be safer.")
-                else:
-                    st.success("🌤️ Weather looks good for travel. You're all set!")
+                except Exception as e:
+                    st.warning(f"⚠️ Unable to fetch weather info: {e}")
 
-                st.session_state.chat_state = "payment"
-                st.rerun()
+                if st.button("Continue to Payment"):
+                    st.session_state.chat_state = "payment"
+                    st.rerun()
         else:
             st.warning("No open slots.")
-            go_back_to("start")
-
+        go_back_to("main_menu")
 # --- STEP 3: Payment ---
 elif st.session_state.chat_state == "payment":
     st.subheader("💳 Token Payment")
