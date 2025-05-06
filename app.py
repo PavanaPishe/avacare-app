@@ -307,23 +307,31 @@ elif st.session_state.chat_state == "select_doctor":
             (availability_df["Doctor_ID"] == doctor_id) & 
             (availability_df["Slot_Status"] == "Open")
         ]
-        if not slots.empty:
-            slot_options = slots["Date"] + " " + slots["Start_Time"]
-            selected_slot = st.selectbox("Choose Slot", slot_options)
-            if st.button("Confirm Appointment"):
-                st.session_state.selected_doctor = selected_doctor
-                st.session_state.selected_slot = selected_slot
-                st.session_state.chat_state = "payment"
-                st.rerun()
+       if not slots.empty:
+    slot_options = slots["Date"] + " " + slots["Start_Time"]
+    selected_slot = st.selectbox("Choose Slot", slot_options)
+    if st.button("Confirm Appointment"):
+        st.session_state.selected_doctor = selected_doctor
+        st.session_state.selected_slot = selected_slot
+
+        # --- Weather Check Logic (correctly indented) ---
+        patient_record = patients_df[patients_df["Patient_ID"] == st.session_state.patient_id]
+        travel_city = patient_record.iloc[0].get("Traveling_From", "Dallas")
+        weather_message = get_weather_forecast(travel_city)
+        st.info(weather_message)
+
+        if "rain" in weather_message.lower() or "storm" in weather_message.lower():
+            st.warning("🌧️ It looks like the weather may be rough. You may consider booking a **telehealth** consultation or **rescheduling** your appointment to avoid inconvenience.")
+        elif "snow" in weather_message.lower():
+            st.warning("❄️ Snowy conditions detected. A remote consultation might be safer.")
         else:
-            st.warning("No open slots.")
-        go_back_to("start")
+            st.success("🌤️ Weather looks good for travel. You're all set!")
 
-patient_record = patients_df[patients_df["Patient_ID"] == st.session_state.patient_id]
-travel_city = patient_record.iloc[0].get("Traveling_From", "Dallas")
-weather_message = get_weather_forecast(travel_city)
-st.info(weather_message)
-
+        st.session_state.chat_state = "payment"
+        st.rerun()
+else:
+    st.warning("No open slots.")
+    go_back_to("start")
 
 # --- STEP 3: Payment ---
 elif st.session_state.chat_state == "payment":
