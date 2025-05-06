@@ -556,7 +556,7 @@ elif st.session_state.chat_state == "voice_demo":
         st.markdown("---")
 
     go_back_to("main_menu")
-        option = st.selectbox("Choose an action", [
+    option = st.selectbox("Choose an action", [
         "📅 Book an Appointment",
         "🧾 View Last Prescription (Coming Soon)",
         "🔁 Reschedule an Appointment (Coming Soon)",
