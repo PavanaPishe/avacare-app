@@ -308,23 +308,20 @@ elif st.session_state.chat_state == "payment":
     go_back_to("select_doctor")
 
 # --- STEP 4: Confirmation ---
-elif st.session_state.chat_state == "confirmed":
-    from io import BytesIO
+elif st.session_state.chat_state == "confirmation":
     from datetime import datetime
+    from io import BytesIO
     from reportlab.pdfgen import canvas
     from reportlab.lib.pagesizes import A4
 
-     sheet = connect_to_patient_sheet()
+    sheet = connect_to_patient_sheet()
     df = load_patient_dataframe(sheet)
 
     st.balloons()
     st.subheader("✅ Appointment Confirmed!")
-    st.success("Thank you for using AVACARE!")
-    st.write(f"Doctor: {st.session_state.selected_doctor}")
-    st.write(f"Slot: {st.session_state.selected_slot}")
-    st.write(f"Payment Mode: {st.session_state.selected_payment_mode}")
+    st.success("Your appointment has been successfully confirmed. Please download your confirmation below.")
 
-    # --- 🧠 Smart Feedback Based on History ---
+    # --- Smart Feedback Based on History ---
     try:
         patient = df[df["Patient_ID"] == st.session_state.patient_id].iloc[0]
         last_date = patient.get("Last_Appointment_Date", "Not Available")
@@ -341,10 +338,10 @@ elif st.session_state.chat_state == "confirmed":
             )
         else:
             st.info(f"👏 Well done {st.session_state.name}, you've been punctual with your appointments!")
-    except Exception as e:
+    except Exception:
         st.info("📘 Appointment history not found. Let’s begin a fresh journey!")
 
-    # --- 📄 Generate PDF Confirmation ---
+    # --- Generate PDF Confirmation ---
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     w, h = A4
@@ -376,8 +373,6 @@ elif st.session_state.chat_state == "confirmed":
 
     go_back_to("main_menu")
 
-
-    go_back_to("main_menu")
 
 
    
