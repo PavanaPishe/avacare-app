@@ -271,12 +271,29 @@ elif st.session_state.chat_state == "payment":
         st.rerun()
     go_back_to("select_doctor")
 
-# --- STEP 4: Confirmation ---
-elif st.session_state.chat_state == "confirmed":
+# Step 9: Confirm + PDF
+elif st.session_state.chat_state == "confirmation":
     st.balloons()
-    st.subheader("✅ Appointment Confirmed!")
-    st.success("Thank you for using AVACARE!")
-    st.write(f"Doctor: {st.session_state.selected_doctor}")
-    st.write(f"Slot: {st.session_state.selected_slot}")
-    st.write(f"Payment Mode: {st.session_state.selected_payment_mode}")
-    go_back_to("start")
+    st.success("✅ Appointment Confirmed!")
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    w, h = A4
+    c.setFont("Helvetica-Bold", 18)
+    c.drawCentredString(w / 2, h - 80, "Appointment Confirmation")
+    c.setFont("Helvetica", 12)
+    y = h - 120
+    lines = [
+        f"Patient: {st.session_state.name}",
+        f"Patient ID: {st.session_state.patient_id}",
+        f"Doctor: Dr. {st.session_state.selected_doctor}",
+        f"Slot: {st.session_state.selected_slot}",
+        f"Specialty: {st.session_state.recommended_specialty}",
+        f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    ]
+    for line in lines:
+        c.drawString(60, y, line)
+        y -= 20
+    c.save()
+    buffer.seek(0)
+    st.download_button("📥 Download Confirmation", data=buffer, file_name="confirmation.pdf", mime="application/pdf")
+    go_back_to("main_menu")
