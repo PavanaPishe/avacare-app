@@ -389,88 +389,95 @@ elif st.session_state.chat_state == "confirmed":
     st.subheader("✅ Appointment Confirmed!")
     st.success("Thank you for using AVACARE!")
 
-    # Fetch patient history for encouragement or warning
+    # --- Fetch patient history for encouragement or warning ---
     sheet = connect_to_patient_sheet()
     df = load_patient_dataframe(sheet)
     patient = df[df["Patient_ID"] == st.session_state.patient_id]
 
+    last_reason = ""
     if not patient.empty:
         last_date = patient.iloc[0].get("Last_Appointment_Date", "N/A")
         missed = patient.iloc[0].get("Missed_Appointments", "0")
-        reason = patient.iloc[0].get("Missed_Appointment_Reason", "")
+        last_reason = patient.iloc[0].get("Missed_Appointment_Reason", "")
 
         missed_count = int(str(missed).strip()) if str(missed).strip().isdigit() else 0
 
         if missed_count > 0:
-           st.warning(f"⚠️ I see you had an appointment on **{last_date}** but missed it.\n\n_Reason given:_ **{reason}**\n\nLet’s make sure we meet this time. We're here to help! 😊")
+            st.warning(
+                f"⚠️ I see you had an appointment on **{last_date}** but missed it.\n\n"
+                f"_Reason given:_ **{last_reason}**\n\n"
+                f"Let’s make sure we meet this time. We're here to help! 😊"
+            )
 
-           if "transportation" in reason.lower():
-               slot_date = st.session_state.selected_slot.split()[0]
-               st.info(f"🚗 As a token of support, we’re providing you with a **40% Uber voucher** valid until your new appointment on **{slot_date}**. Safe travels! 🎟️")
-
-
-
+            if "transportation" in last_reason.lower():
+                slot_date = st.session_state.selected_slot.split()[0]
+                st.info(
+                    f"🚗 As a token of support, we’re providing you with a **40% Uber voucher** "
+                    f"valid until your new appointment on **{slot_date}**. Safe travels! 🎟️"
+                )
         else:
             st.info(f"🎉 Great record! No missed appointments so far. Keep it up, {st.session_state.name}!")
 
-    # Appointment Details
+    # --- Appointment Details on Screen ---
     st.write(f"Doctor: {st.session_state.selected_doctor}")
     st.write(f"Slot: {st.session_state.selected_slot}")
     st.write(f"Payment Mode: {st.session_state.selected_payment_mode}")
 
-    # Generate PDF confirmation
-required_keys = [
-    "name", "patient_id", "selected_doctor",
-    "recommended_specialty", "selected_slot", "selected_payment_mode"
-]
-
-if all(key in st.session_state for key in required_keys):
-    # ✅ Continue with PDF generation safely
-    buffer = BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
-    w, h = A4
-    c.setFont("Helvetica-Bold", 18)
-    c.drawCentredString(w / 2, h - 80, "Appointment Confirmation")
-
-    c.setFont("Helvetica", 12)
-    y = h - 130
-    lines = [
-        f"Patient Name     : {st.session_state.name}",
-        f"Patient ID       : {st.session_state.patient_id}",
-        f"Doctor Name      : Dr. {st.session_state.selected_doctor}",
-        f"Specialty        : {st.session_state.recommended_specialty}",
-        f"Appointment Slot : {st.session_state.selected_slot}",
-        f"Payment Mode     : {st.session_state.selected_payment_mode}",
-        f"Confirmed At     : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    # --- Generate PDF confirmation ---
+    required_keys = [
+        "name", "patient_id", "selected_doctor",
+        "recommended_specialty", "selected_slot", "selected_payment_mode"
     ]
-    for line in lines:
-        c.drawString(60, y, line)
-        y -= 20
 
-    # 🚗 Add Uber voucher if reason is "transportation"
-    if "transportation" in last_reason.lower():
-        promo_code = f"UBER-{st.session_state.patient_id[:4]}-{st.session_state.selected_slot.split()[0].replace('-', '')}"
-        c.drawString(60, y - 20, "-" * 50)
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(60, y - 40, "🚗 Uber Travel Voucher")
-        c.setFont("Helvetica", 11)
-        c.drawString(60, y - 60, f"Voucher Code : {promo_code}")
-        c.drawString(60, y - 80, "Discount     : 40% off on your next Uber ride")
-        c.drawString(60, y - 100, f"Valid Until  : {st.session_state.selected_slot.split()[0]}")
-        c.drawString(60, y - 120, "Use this code in the Uber app during checkout.")
-        y -= 120
+    if all(key in st.session_state for key in required_keys):
+        buffer = BytesIO()
+        c = canvas.Canvas(buffer, pagesize=A4)
+        w, h = A4
+        c.setFont("Helvetica-Bold", 18)
+        c.drawCentredString(w / 2, h - 80, "Appointment Confirmation")
 
-    c.drawString(60, y - 40, "-" * 50)
-    c.drawString(60, y - 60, "Thank you for choosing AVACARE!")
-    c.save()
-    buffer.seek(0)
+        c.setFont("Helvetica", 12)
+        y = h - 130
+        lines = [
+            f"Patient Name     : {st.session_state.name}",
+            f"Patient ID       : {st.session_state.patient_id}",
+            f"Doctor Name      : Dr. {st.session_state.selected_doctor}",
+            f"Specialty        : {st.session_state.recommended_specialty}",
+            f"Appointment Slot : {st.session_state.selected_slot}",
+            f"Payment Mode     : {st.session_state.selected_payment_mode}",
+            f"Confirmed At     : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        ]
+        for line in lines:
+            c.drawString(60, y, line)
+            y -= 20
 
-    # 📥 PDF Download
-    st.download_button(
-        label="📥 Download Confirmation PDF",
-        data=buffer,
-        file_name=f"AVACARE_Confirmation_{st.session_state.patient_id}.pdf",
-        mime="application/pdf"
-    )
-else:
-    st.error("⚠️ Some appointment details are missing. Please complete booking before downloading the confirmation.")
+        # ✅ Add Uber voucher if applicable
+        if "transportation" in last_reason.lower():
+            promo_code = f"UBER-{st.session_state.patient_id[:4]}-{st.session_state.selected_slot.split()[0].replace('-', '')}"
+            c.drawString(60, y - 20, "-" * 50)
+            c.setFont("Helvetica-Bold", 12)
+            c.drawString(60, y - 40, "🚗 Uber Travel Voucher")
+            c.setFont("Helvetica", 11)
+            c.drawString(60, y - 60, f"Voucher Code : {promo_code}")
+            c.drawString(60, y - 80, "Discount     : 40% off on your next Uber ride")
+            c.drawString(60, y - 100, f"Valid Until  : {st.session_state.selected_slot.split()[0]}")
+            c.drawString(60, y - 120, "Use this code in the Uber app during checkout.")
+            y -= 140
+        else:
+            y -= 40
+
+        c.drawString(60, y, "-" * 50)
+        c.drawString(60, y - 20, "Thank you for choosing AVACARE!")
+        c.save()
+        buffer.seek(0)
+
+        # 📥 PDF Download Button
+        st.download_button(
+            label="📥 Download Confirmation PDF",
+            data=buffer,
+            file_name=f"AVACARE_Confirmation_{st.session_state.patient_id}.pdf",
+            mime="application/pdf"
+        )
+    else:
+        st.error("⚠️ Some appointment details are missing. Please complete booking before downloading the confirmation.")
+
