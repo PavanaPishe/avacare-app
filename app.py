@@ -315,6 +315,10 @@ elif st.session_state.chat_state == "select_doctor":
                 st.session_state.selected_doctor = selected_doctor
                 st.session_state.selected_slot = selected_slot
 
+                # ✅ Load patient data
+                sheet = connect_to_patient_sheet()
+                patients_df = load_patient_dataframe(sheet)
+
                 # --- Weather Check Logic ---
                 patient_record = patients_df[patients_df["Patient_ID"] == st.session_state.patient_id]
                 travel_city = patient_record.iloc[0].get("Traveling_From", "Dallas")
