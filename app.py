@@ -97,9 +97,9 @@ if "chat_state" not in st.session_state:
     st.session_state.is_returning = None
     st.session_state.recommended_specialty = ""
 
-def go_back_to(state_name):
-    if st.button("⬅️ Go Back"):
-        st.session_state.chat_state = state_name
+def go_back_to(state, key=None):
+    if st.button("⬅️ Go Back", key=key or f"go_back_{state}"):
+        st.session_state.chat_state = state
         st.rerun()
 
 # -------------------- Step-by-step Flow --------------------
@@ -354,7 +354,7 @@ elif st.session_state.chat_state == "weather_check":
        st.rerun()
 
 
-    go_back_to("select_doctor")  # optional, gives back navigation
+    go_back_to("select_doctor", key="go_back_from_weather")  # optional, gives back navigation
     go_back_to("select_doctor")
 
 # --- STEP 3: Payment ---
@@ -376,7 +376,7 @@ elif st.session_state.chat_state == "payment":
         st.session_state.chat_state = "confirmed"
         st.rerun()
 
-    go_back_to("select_doctor")
+    go_back_to("main_menu", key="go_back_from_payment")
 
 # --- STEP 4: Confirmation ---
 elif st.session_state.chat_state == "confirmed":
