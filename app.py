@@ -564,7 +564,7 @@ elif st.session_state.chat_state == "voice_demo":
         "🎤 Try Voice Assistant",   # 👈 Add this line
         "🚪 Exit"
     ])
-        if option == "📅 Book an Appointment":
+    if option == "📅 Book an Appointment":
         st.session_state.chat_state = "ask_symptoms"
     elif option == "🎤 Try Voice Assistant":
         st.session_state.chat_state = "voice_demo"
