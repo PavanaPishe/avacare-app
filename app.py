@@ -308,49 +308,63 @@ elif st.session_state.chat_state == "payment":
     go_back_to("select_doctor")
 
 
-# --- STEP 4: Confirmation ---
-elif st.session_state.chat_state == "confirmed":
-    from io import BytesIO
+elif st.session_state.chat_state == "confirmation":
     from datetime import datetime
+    from io import BytesIO
     from reportlab.pdfgen import canvas
     from reportlab.lib.pagesizes import A4
 
+    sheet = connect_to_patient_sheet()
+    df = load_patient_dataframe(sheet)
+
+    # Fetch patient row
+    match = df[df["Patient_ID"] == st.session_state.patient_id]
+
     st.balloons()
     st.subheader("✅ Appointment Confirmed!")
-    st.success("Thank you for using AVACARE!")
-    st.write(f"Doctor: {st.session_state.selected_doctor}")
-    st.write(f"Slot: {st.session_state.selected_slot}")
-    st.write(f"Payment Mode: {st.session_state.selected_payment_mode}")
+    st.success("Your appointment has been successfully confirmed. Please download your confirmation below.")
 
-    # Generate PDF confirmation
+    # 📢 Friendly follow-up message
+    if not match.empty:
+        last_date = match.iloc[0].get("Last_Appointment_Date", "")
+        missed = match.iloc[0].get("Missed_Appointments", 0)
+        reason = match.iloc[0].get("Missed_Appointment_Reason", "")
+
+        try:
+            if int(missed) > 0:
+                st.warning(
+                    f"🕒 Hey {st.session_state.name}, your last appointment was on **{last_date}**, "
+                    f"but it was marked as **missed**.\n\n"
+                    f"Reason noted: _'{reason}'_. Let's make sure we don't miss this one! 👍"
+                )
+            else:
+                st.info(f"👏 Great job, {st.session_state.name}! You’ve been punctual for your appointments. Keep it up!")
+        except:
+            pass
+
+    # 📄 PDF confirmation
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     w, h = A4
     c.setFont("Helvetica-Bold", 18)
     c.drawCentredString(w / 2, h - 80, "Appointment Confirmation")
-
     c.setFont("Helvetica", 12)
-    y = h - 130
+    y = h - 120
     lines = [
-        f"Patient Name     : {st.session_state.name}",
-        f"Patient ID       : {st.session_state.patient_id}",
-        f"Doctor Name      : Dr. {st.session_state.selected_doctor}",
-        f"Specialty        : {st.session_state.recommended_specialty}",
-        f"Appointment Slot : {st.session_state.selected_slot}",
-        f"Payment Mode     : {st.session_state.selected_payment_mode}",
-        f"Confirmed At     : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        f"Patient: {st.session_state.name}",
+        f"Patient ID: {st.session_state.patient_id}",
+        f"Doctor: Dr. {st.session_state.selected_doctor}",
+        f"Slot: {st.session_state.selected_slot}",
+        f"Specialty: {st.session_state.recommended_specialty}",
+        f"Payment Mode: {st.session_state.selected_payment_mode}",
+        f"Confirmed At: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
     ]
     for line in lines:
         c.drawString(60, y, line)
         y -= 20
-
-    c.drawString(60, y - 20, "-" * 50)
-    c.drawString(60, y - 40, "Thank you for choosing AVACARE!")
-
     c.save()
     buffer.seek(0)
 
-    # Download Button
     st.download_button(
         label="📥 Download Confirmation PDF",
         data=buffer,
@@ -359,3 +373,6 @@ elif st.session_state.chat_state == "confirmed":
     )
 
     go_back_to("main_menu")
+
+
+   
