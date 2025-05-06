@@ -176,7 +176,6 @@ elif st.session_state.chat_state == "greeting":
         st.rerun()
 
 elif st.session_state.chat_state == "voice_conversation":
-     elif st.session_state.chat_state == "voice_conversation":
     from streamlit_audiorecorder import audiorecorder
     import openai
     import tempfile
@@ -188,13 +187,13 @@ elif st.session_state.chat_state == "voice_conversation":
     st.subheader("🎙️ AVA Voice Assistant (Mic + Whisper)")
     st.write("Click below to record your voice:")
 
-    # Record voice from mic
+    # Record voice
     audio_bytes = audiorecorder("Click to record", "🎤", key="audio_key")
 
     if audio_bytes:
         st.audio(audio_bytes, format="audio/wav")
 
-        # Save WAV file temporarily
+        # Save to WAV
         with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_audio_file:
             temp_audio_file.write(audio_bytes)
             temp_audio_path = temp_audio_file.name
@@ -204,7 +203,7 @@ elif st.session_state.chat_state == "voice_conversation":
         mp3_path = temp_audio_path.replace(".wav", ".mp3")
         audio.export(mp3_path, format="mp3")
 
-        # Transcribe with OpenAI Whisper
+        # Transcribe
         with open(mp3_path, "rb") as f:
             st.write("Transcribing...")
             transcript = openai.Audio.transcribe("whisper-1", f)
@@ -212,13 +211,12 @@ elif st.session_state.chat_state == "voice_conversation":
             st.success("✅ Transcription Complete")
             st.markdown(f"**You said:** {spoken_text}")
 
-        # Clean up temp files
         os.remove(temp_audio_path)
         os.remove(mp3_path)
 
-        # Save text and move to next state
         st.session_state.chat_state = "ask_identity"
         st.rerun()
+
 
 
 
