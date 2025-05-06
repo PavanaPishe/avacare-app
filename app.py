@@ -196,9 +196,10 @@ elif st.session_state.chat_state == "main_menu":
         st.rerun()
         
 # --- STEP 1: Ask for Symptom ---
-if st.session_state.chat_state == "start":
-    st.subheader("Hi! What symptom are you experiencing?")
-    symptom = st.text_input("Example: fever, acne, toothache")
+
+elif st.session_state.chat_state == "ask_symptoms":
+    st.subheader("What symptoms are you experiencing?")
+    symptom = st.text_input("Enter your primary symptom (e.g., fever, back pain, toothache):")
 
     if symptom:
         symptom_map = {
