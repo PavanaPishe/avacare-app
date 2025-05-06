@@ -454,7 +454,11 @@ elif st.session_state.chat_state == "confirmed":
 
             # --- Smart Rescheduler Suggestion ---
             st.info("🔁 Since you missed a previous appointment, here are the next best available slots:")
+            # Smart Rescheduler Suggestion
+            st.info("🔁 Since you missed a previous appointment, here are the next best available slots:")
 
+            # ✅ FIX: Load doctor data
+            doctor_df, availability_df = load_doctor_data()
             doc_id = doctor_df[doctor_df["Doctor_Name"] == st.session_state.selected_doctor]["Doctor_ID"].values[0]
             open_slots = availability_df[
                 (availability_df["Doctor_ID"] == doc_id) &
