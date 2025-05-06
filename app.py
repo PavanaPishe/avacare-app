@@ -43,6 +43,46 @@ def get_weather_forecast(city_raw):
     except Exception as e:
         return f"⚠️ Could not fetch weather data: {str(e)}"
 
+def predict_no_show_risk(patient_record, weather_message, selected_slot):
+    risk_score = 0
+
+    # Missed appointments count
+    missed = int(str(patient_record.get("Missed_Appointments", "0")).strip())
+    if missed >= 2:
+        risk_score += 2
+    elif missed == 1:
+        risk_score += 1
+
+    # Risk category
+    category = patient_record.get("Risk_Category", "").lower()
+    if "high" in category:
+        risk_score += 2
+    elif "moderate" in category:
+        risk_score += 1
+
+    # Weather condition
+    if "rain" in weather_message.lower() or "storm" in weather_message.lower():
+        risk_score += 2
+    elif "snow" in weather_message.lower():
+        risk_score += 1
+
+    # Appointment time logic
+    try:
+        hour = int(selected_slot.split()[1].split(":")[0])
+        if hour < 10:  # early morning slots
+            risk_score += 1
+    except:
+        pass
+
+    # Final risk message
+    if risk_score >= 5:
+        return "⚠️ High Risk of No-Show"
+    elif risk_score >= 3:
+        return "🟠 Moderate Risk of No-Show"
+    else:
+        return "✅ Low Risk of No-Show"
+
+
 
 # -------------------- FUNCTIONS --------------------
 
@@ -335,6 +375,10 @@ elif st.session_state.chat_state == "weather_check":
         patient_record = patients_df[patients_df["Patient_ID"] == st.session_state.patient_id]
         travel_city = patient_record.iloc[0].get("Traveling_From", "Dallas")
         weather_message = get_weather_forecast(travel_city)
+        # ✅ AI No-Show Risk Prediction
+        risk_msg = predict_no_show_risk(patient_record.iloc[0], weather_message, st.session_state.selected_slot)
+        st.info(f"🧠 No-Show Risk Prediction: {risk_msg}")
+
 
         st.info(f"📍 Travel City: {travel_city}")
         st.info(f"🌤️ Weather Forecast: {weather_message}")
