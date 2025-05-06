@@ -148,12 +148,19 @@ if st.session_state.chat_state == "choose_mode":
 elif st.session_state.chat_state == "choose_language":
     st.subheader("Step 2: Choose your language")
     st.session_state.language = st.radio("Preferred Language:", ["English", "Hindi", "Spanish"])
-    if st.button("Continue"):
+
+    col1, col2 = st.columns(2)
+    if col1.button("Continue"):
         if st.session_state.mode == "voice":
             st.session_state.chat_state = "voice_conversation"
         else:
             st.session_state.chat_state = "greeting"
         st.rerun()
+
+    if col2.button("⬅️ Go Back to Mode"):
+        st.session_state.chat_state = "choose_mode"
+        st.rerun()
+
 
 elif st.session_state.chat_state == "greeting":
     greetings = {
@@ -169,6 +176,7 @@ elif st.session_state.chat_state == "greeting":
         st.rerun()
 
 elif st.session_state.chat_state == "voice_conversation":
+     elif st.session_state.chat_state == "voice_conversation":
     from streamlit_audiorecorder import audiorecorder
     import openai
     import tempfile
@@ -178,10 +186,10 @@ elif st.session_state.chat_state == "voice_conversation":
     openai.api_key = st.secrets["openai_api_key"]
 
     st.subheader("🎙️ AVA Voice Assistant (Mic + Whisper)")
-    st.write("Click the button below to record your voice:")
+    st.write("Click below to record your voice:")
 
     # Record voice from mic
-    audio_bytes = audio_recorder(pause_threshold=2.0, text="Click to record", icon_size="2x")
+    audio_bytes = audiorecorder("Click to record", "🎤", key="audio_key")
 
     if audio_bytes:
         st.audio(audio_bytes, format="audio/wav")
@@ -191,12 +199,12 @@ elif st.session_state.chat_state == "voice_conversation":
             temp_audio_file.write(audio_bytes)
             temp_audio_path = temp_audio_file.name
 
-        # Convert to MP3 for Whisper
+        # Convert to MP3
         audio = AudioSegment.from_wav(temp_audio_path)
         mp3_path = temp_audio_path.replace(".wav", ".mp3")
         audio.export(mp3_path, format="mp3")
 
-        # Transcribe with Whisper
+        # Transcribe with OpenAI Whisper
         with open(mp3_path, "rb") as f:
             st.write("Transcribing...")
             transcript = openai.Audio.transcribe("whisper-1", f)
@@ -204,13 +212,14 @@ elif st.session_state.chat_state == "voice_conversation":
             st.success("✅ Transcription Complete")
             st.markdown(f"**You said:** {spoken_text}")
 
-        # Clean up files
+        # Clean up temp files
         os.remove(temp_audio_path)
         os.remove(mp3_path)
 
         # Save text and move to next state
         st.session_state.chat_state = "ask_identity"
         st.rerun()
+
 
 
 elif st.session_state.chat_state == "ask_identity":
