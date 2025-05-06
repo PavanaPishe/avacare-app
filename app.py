@@ -29,20 +29,20 @@ def load_patient_dataframe(sheet):
     records = sheet.get_all_records()
     return pd.DataFrame(records)
 
-@st.cache_data
 def load_doctor_data():
+    import gspread
+    from oauth2client.service_account import ServiceAccountCredentials
+
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service_account"], scope)
     client = gspread.authorize(creds)
 
-    sheet = client.open_by_key("1VVMGuKfVLoKlvEF6DIfnDqAvWCJ-A_fUialc_yUf8w")
-    profile_data = sheet.worksheet("Doctor_Info").get_all_records()
-    availability_data = sheet.worksheet("Doctor_Availability").get_all_records()
+    sheet = client.open_by_key("1VVMGuKFvLokIEvFC6DIfnDqAvWCJ-A_fUaiIc_yUf8w")
+    info = sheet.worksheet("Doctor_Info").get_all_records()
+    avail = sheet.worksheet("Doctor_Availability").get_all_records()
 
-    df_profile = pd.DataFrame(profile_data)
-    df_availability = pd.DataFrame(availability_data)
+    return pd.DataFrame(info), pd.DataFrame(avail)
 
-    return df_profile, df_availability
 
 
 # --- ✅ Move this here (before it is used) ---
