@@ -129,7 +129,6 @@ elif st.session_state.chat_state == "ask_identity":
     elif st.button("No"):
         st.session_state.is_returning = False
         st.session_state.chat_state = "get_new_info"
-
 # --- Step 5A: Returning Patient ---
 elif st.session_state.chat_state == "get_returning_info":
     sheet = connect_to_patient_sheet()
@@ -143,21 +142,26 @@ elif st.session_state.chat_state == "get_returning_info":
         match = df[df["Patient_ID"] == pid]
 
         if not match.empty:
-            st.success("✅ Verified.")
             st.session_state.name = name
             st.session_state.patient_id = pid
 
-            # 🟢 Check if they missed their last appointment
-            last_date = match.iloc[0].get("Suggested_Next_Appointment", "")
+            # ✅ Adjusted field names to your sheet
+            last_date = match.iloc[0].get("Last_Appointment_Date", "")
             missed_count = match.iloc[0].get("Missed_Appointments", 0)
-            missed_reason = match.iloc[0].get("Missed_Reason", "")
+            missed_reason = match.iloc[0].get("Missed_Appointment_Reason", "")
 
-            if missed_count and int(missed_count) > 0:
-                st.warning(
-                    f"Hi {name}, I see that your last appointment was on **{last_date}**, "
-                    f"but it was marked as **missed**. You mentioned: _'{missed_reason}'_.\n\n"
-                    "Hope this time it goes smoothly! 😊"
-                )
+            st.success("✅ Verified.")
+
+            # Show message only if missed > 0
+            try:
+                if int(missed_count) > 0:
+                    st.warning(
+                        f"Hi {name}, I see that your last appointment was on **{last_date}**, "
+                        f"but it was marked as **missed**. You had mentioned: _'{missed_reason}'_.\n\n"
+                        "Hope everything’s okay — let’s make sure we don’t miss the next one! 😊"
+                    )
+            except:
+                pass  # In case conversion fails
 
             st.session_state.chat_state = "main_menu"
             st.rerun()
