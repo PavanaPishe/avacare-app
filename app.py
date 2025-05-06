@@ -349,17 +349,12 @@ elif st.session_state.chat_state == "weather_check":
     except Exception as e:
         st.warning(f"⚠️ Unable to fetch weather info: {e}")
 
-    if st.button("Continue to Payment"):
-        st.session_state.chat_state = "payment"
-        st.rerun()
+    if st.button("Continue to Payment", key="weather_to_payment"):
+       st.session_state.chat_state = "payment"
+       st.rerun()
+
 
     go_back_to("select_doctor")  # optional, gives back navigation
-
-# Move to payment
-    if st.button("Continue to Payment"):
-        st.session_state.chat_state = "payment"
-        st.rerun()
-
     go_back_to("select_doctor")
 
 # --- STEP 3: Payment ---
