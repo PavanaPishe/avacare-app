@@ -303,13 +303,13 @@ elif st.session_state.chat_state == "payment":
             st.session_state.selected_doctor,
             st.session_state.selected_slot
         )
-        st.session_state.chat_state = "Confirmed!"
+        st.session_state.chat_state = "confirmed"
         st.rerun()
     go_back_to("select_doctor")
 
 
 
-   elif st.session_state.chat_state == "Confirmed!":
+   elif st.session_state.chat_state == "confirmed":
     from datetime import datetime
     from io import BytesIO
     from reportlab.pdfgen import canvas
