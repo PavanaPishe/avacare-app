@@ -349,10 +349,11 @@ elif st.session_state.chat_state == "select_doctor":
         else:
             st.warning("No open slots.")
         go_back_to("main_menu")
+
 # --- STEP 3: Payment ---
 elif st.session_state.chat_state == "payment":
     st.subheader("💳 Token Payment")
-    st.write("Pay 25% token to confirm.")
+    st.write("To confirm your appointment, please pay a **25% token**.")
 
     st.session_state.selected_payment_mode = st.radio(
         "Choose a Payment Mode", 
@@ -367,6 +368,7 @@ elif st.session_state.chat_state == "payment":
         )
         st.session_state.chat_state = "confirmed"
         st.rerun()
+
     go_back_to("select_doctor")
 
 # --- STEP 4: Confirmation ---
