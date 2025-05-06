@@ -318,37 +318,49 @@ elif st.session_state.chat_state == "select_doctor":
             selected_slot = st.selectbox("Choose Slot", slot_options)
 
             if st.button("Confirm Appointment"):
-                st.session_state.selected_doctor = selected_doctor
-                st.session_state.selected_slot = selected_slot
+               st.session_state.selected_doctor = selected_doctor
+               st.session_state.selected_slot = selected_slot
+               st.session_state.chat_state = "weather_check"
+               st.rerun()
 
-                # ✅ Load patient data
-                sheet = connect_to_patient_sheet()
-                patients_df = load_patient_dataframe(sheet)
 
-                # --- Weather Check Logic ---
-                try:
-                    patient_record = patients_df[patients_df["Patient_ID"] == st.session_state.patient_id]
-                    travel_city = patient_record.iloc[0].get("Traveling_From", "Dallas")
-                    weather_message = get_weather_forecast(travel_city)
-                    st.info(f"📍 Travel City: {travel_city}")
-                    st.info(f"🌦️ Weather Forecast: {weather_message}")
+# --- STEP 2.5: Weather Check (after slot confirmation) ---
+elif st.session_state.chat_state == "weather_check":
+    st.subheader("🌦️ Weather Check")
 
-                    if "rain" in weather_message.lower() or "storm" in weather_message.lower():
-                        st.warning("🌧️ It looks like the weather may be rough. You may consider booking a **telehealth** consultation or **rescheduling** your appointment to avoid inconvenience.")
-                    elif "snow" in weather_message.lower():
-                        st.warning("❄️ Snowy conditions detected. A remote consultation might be safer.")
-                    else:
-                        st.success("🌤️ Weather looks good for travel. You're all set!")
+    sheet = connect_to_patient_sheet()
+    patients_df = load_patient_dataframe(sheet)
 
-                except Exception as e:
-                    st.warning(f"⚠️ Unable to fetch weather info: {e}")
+    try:
+        patient_record = patients_df[patients_df["Patient_ID"] == st.session_state.patient_id]
+        travel_city = patient_record.iloc[0].get("Traveling_From", "Dallas")
+        weather_message = get_weather_forecast(travel_city)
 
-                if st.button("Continue to Payment"):
-                    st.session_state.chat_state = "payment"
-                    st.rerun()
+        st.info(f"📍 Travel City: {travel_city}")
+        st.info(f"🌤️ Weather Forecast: {weather_message}")
+
+        if "rain" in weather_message.lower() or "storm" in weather_message.lower():
+            st.warning("🌧️ It looks like the weather may be rough. You may consider booking a **telehealth** consultation or **rescheduling** your appointment.")
+        elif "snow" in weather_message.lower():
+            st.warning("❄️ Snowy conditions detected. A remote consultation might be safer.")
         else:
-            st.warning("No open slots.")
-        go_back_to("main_menu")
+            st.success("🌤️ Weather looks good for travel. You're all set!")
+
+    except Exception as e:
+        st.warning(f"⚠️ Unable to fetch weather info: {e}")
+
+    if st.button("Continue to Payment"):
+        st.session_state.chat_state = "payment"
+        st.rerun()
+
+    go_back_to("select_doctor")  # optional, gives back navigation
+
+# Move to payment
+    if st.button("Continue to Payment"):
+        st.session_state.chat_state = "payment"
+        st.rerun()
+
+    go_back_to("select_doctor")
 
 # --- STEP 3: Payment ---
 elif st.session_state.chat_state == "payment":
