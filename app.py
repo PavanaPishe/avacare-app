@@ -1,28 +1,45 @@
-
 import streamlit as st
 import pandas as pd
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+from io import BytesIO
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from datetime import datetime
 
-# --- Google Sheets Setup ---
+# -------------------- GOOGLE SHEETS SETUP --------------------
+
 @st.cache_resource
 def connect_to_patient_sheet():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service_account"], scope)
     client = gspread.authorize(creds)
-    return client.open_by_key("1aFhExzz3_BTNDzJ2h37YqxK6ij8diJCTbAwsPcdJQtM")
+    return client.open_by_key("1aFhExzz3_BTNDzJ2h37YqxK6ij8diJCTbAwsPcdJQtM")  # Patient Sheet
 
 @st.cache_resource
 def connect_to_doctor_sheet():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service_account"], scope)
     client = gspread.authorize(creds)
-    return client.open_by_key("1VVMGuKFvLokIEvFC6DIfnDqAvWCJ-A_fUaiIc_yUf8w")
+    return client.open_by_key("1VVMGuKFvLokIEvFC6DIfnDqAvWCJ-A_fUaiIc_yUf8w")  # Doctor Sheet
+
+# -------------------- FUNCTIONS --------------------
+
+def get_next_patient_id(sheet):
+    records = sheet.worksheet("Sheet1").get_all_records()
+    if not records:
+        return "AVP-4000"
+    last_id = sorted(records, key=lambda r: int(r["Patient_ID"].split("-")[1]))[-1]["Patient_ID"]
+    new_number = int(last_id.split("-")[1]) + 1
+    return f"AVP-{new_number}"
 
 def load_patient_dataframe(sheet):
-    return pd.DataFrame(sheet.sheet1.get_all_records())
+    records = sheet.worksheet("Sheet1").get_all_records()
+    return pd.DataFrame(records)
 
-@st.cache_data
+def register_new_patient(sheet, row_data):
+    sheet.worksheet("Sheet1").append_row(row_data)
+
 def load_doctor_data():
     sheet = connect_to_doctor_sheet()
     info = sheet.worksheet("Doctor_Info").get_all_records()
@@ -31,43 +48,142 @@ def load_doctor_data():
 
 def mark_slot_as_filled(doctor_name, slot_datetime):
     sheet = connect_to_doctor_sheet()
-    availability_sheet = sheet.worksheet("Doctor_Availability")
-
-    all_rows = availability_sheet.get_all_values()
-    headers = all_rows[0]
-    rows = all_rows[1:]
-
+    ws = sheet.worksheet("Doctor_Availability")
+    data = ws.get_all_values()
+    headers, rows = data[0], data[1:]
     doc_idx = headers.index("Doctor_Name")
     date_idx = headers.index("Date")
     time_idx = headers.index("Start_Time")
     status_idx = headers.index("Slot_Status")
 
-    if " " in slot_datetime:
-        slot_date, slot_time = slot_datetime.split(" ")
-    else:
-        return
-
+    slot_date, slot_time = slot_datetime.split(" ")
     for i, row in enumerate(rows):
         if row[doc_idx] == doctor_name and row[date_idx] == slot_date and row[time_idx] == slot_time:
-            availability_sheet.update_cell(i + 2, status_idx + 1, "Filled")
+            ws.update_cell(i + 2, status_idx + 1, "Filled")
             return
 
-# --- UI Start ---
-st.set_page_config(page_title="AVACARE", page_icon="🩺")
+# -------------------- UI SETUP --------------------
+
+st.set_page_config(page_title="AVACARE Assistant", page_icon="💼")
+st.markdown("<h1 style='color:#002B5B;'>AVACARE Virtual Assistant</h1>", unsafe_allow_html=True)
 
 if "chat_state" not in st.session_state:
-    st.session_state.chat_state = "start"
+    st.session_state.chat_state = "choose_mode"
+    st.session_state.mode = None
+    st.session_state.language = None
     st.session_state.name = ""
     st.session_state.patient_id = ""
+    st.session_state.is_returning = None
     st.session_state.recommended_specialty = ""
-    st.session_state.selected_doctor = ""
-    st.session_state.selected_slot = ""
 
-def go_back_to(state):
+def go_back_to(state_name):
     if st.button("⬅️ Go Back"):
-        st.session_state.chat_state = state
+        st.session_state.chat_state = state_name
         st.rerun()
 
+# -------------------- Step-by-step Flow --------------------
+
+# Step 1: Communication Mode
+if st.session_state.chat_state == "choose_mode":
+    st.subheader("Step 1: Choose your communication mode")
+    col1, col2, col3 = st.columns(3)
+    if col1.button("Chat"):
+        st.session_state.mode = "chat"
+        st.session_state.chat_state = "choose_language"
+    if col2.button("Voice"):
+        st.session_state.mode = "voice"
+        st.session_state.chat_state = "choose_language"
+    if col3.button("Call"):
+        st.session_state.mode = "call"
+        st.session_state.chat_state = "choose_language"
+
+# Step 2: Language
+elif st.session_state.chat_state == "choose_language":
+    st.subheader("Step 2: Choose your language")
+    st.session_state.language = st.radio("Preferred Language:", ["English", "Hindi", "Spanish"])
+    if st.button("Continue"):
+        st.session_state.chat_state = "greeting"
+        st.rerun()
+    go_back_to("choose_mode")
+
+# Step 3: Greeting
+elif st.session_state.chat_state == "greeting":
+    greetings = {
+        "English": "Hi, how are you doing today?",
+        "Hindi": "नमस्ते, आज आप कैसे हैं?",
+        "Spanish": "Hola, ¿cómo estás hoy?"
+    }
+    st.subheader("Conversation")
+    st.markdown(f"**AVA:** {greetings[st.session_state.language]}")
+    user_reply = st.text_input("Your Response:")
+    if user_reply:
+        st.session_state.chat_state = "ask_identity"
+        st.rerun()
+
+# Step 4: New or Returning
+elif st.session_state.chat_state == "ask_identity":
+    st.subheader("Are you a returning patient?")
+    if st.button("Yes"):
+        st.session_state.is_returning = True
+        st.session_state.chat_state = "get_returning_info"
+    elif st.button("No"):
+        st.session_state.is_returning = False
+        st.session_state.chat_state = "get_new_info"
+
+# Step 5A: Returning Patient
+elif st.session_state.chat_state == "get_returning_info":
+    sheet = connect_to_patient_sheet()
+    df = load_patient_dataframe(sheet)
+    name = st.text_input("Full Name")
+    pid = st.text_input("Patient ID (e.g., AVP-4001)")
+    if name and pid:
+        match = df[df["Patient_ID"] == pid]
+        if not match.empty:
+            st.success("✅ Verified.")
+            st.session_state.name = name
+            st.session_state.patient_id = pid
+            st.session_state.chat_state = "main_menu"
+            st.rerun()
+        else:
+            st.error("❌ ID not found.")
+    go_back_to("ask_identity")
+
+# Step 5B: New Patient
+elif st.session_state.chat_state == "get_new_info":
+    st.subheader("📝 Register as a New Patient")
+    sheet = connect_to_patient_sheet()
+    ws = sheet.worksheet("Sheet1")
+    new_id = get_next_patient_id(sheet)
+    st.write(f"Your Patient ID will be: **{new_id}**")
+
+    fname = st.text_input("First Name")
+    lname = st.text_input("Last Name")
+    gender = st.selectbox("Gender", ["Male", "Female", "Other"])
+    age = st.number_input("Age", min_value=0, max_value=120)
+    symptom = st.text_input("Symptoms")
+    contact = st.text_input("Contact Number")
+
+    if st.button("Register"):
+        row = [new_id, fname, lname, gender, age, symptom, ""] + [""] * 17
+        register_new_patient(sheet, row)
+        st.session_state.name = fname
+        st.session_state.patient_id = new_id
+        st.session_state.chat_state = "main_menu"
+        st.success("✅ Registered successfully!")
+        st.rerun()
+    go_back_to("ask_identity")
+
+# Step 6: Main Menu
+elif st.session_state.chat_state == "main_menu":
+    st.subheader(f"Welcome, {st.session_state.name}")
+    choice = st.selectbox("What would you like to do?", ["📅 Book an Appointment", "🚪 Exit"])
+    if st.button("Proceed"):
+        if choice == "📅 Book an Appointment":
+            st.session_state.chat_state = "ask_symptom"
+        else:
+            st.success("Thank you for using AVACARE.")
+        st.rerun()
+        
 # --- STEP 1: Ask for Symptom ---
 if st.session_state.chat_state == "start":
     st.subheader("Hi! What symptom are you experiencing?")
