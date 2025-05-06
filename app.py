@@ -6,6 +6,7 @@ from io import BytesIO
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from datetime import datetime
+import requests
 
 # -------------------- GOOGLE SHEETS SETUP --------------------
 
@@ -22,6 +23,20 @@ def connect_to_doctor_sheet():
     creds = ServiceAccountCredentials.from_json_keyfile_dict(st.secrets["gcp_service_account"], scope)
     client = gspread.authorize(creds)
     return client.open_by_key("1VVMGuKFvLokIEvFC6DIfnDqAvWCJ-A_fUaiIc_yUf8w")  # Doctor Sheet
+
+def get_weather_forecast(city):
+    api_key = st.secrets["weather_api"]["api_key"]
+    url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
+
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+        weather_desc = data["weather"][0]["description"].title()
+        temperature = data["main"]["temp"]
+        return f"The current weather in {city} is {weather_desc} with a temperature of {temperature}°C."
+    except Exception as e:
+        return f"⚠️ Could not fetch weather data: {str(e)}"
 
 # -------------------- FUNCTIONS --------------------
 
@@ -304,6 +319,12 @@ elif st.session_state.chat_state == "select_doctor":
             st.warning("No open slots.")
         go_back_to("start")
 
+patient_record = patients_df[patients_df["Patient_ID"] == st.session_state.patient_id]
+travel_city = patient_record.iloc[0].get("Traveling_From", "Dallas")
+weather_message = get_weather_forecast(travel_city)
+st.info(weather_message)
+
+
 # --- STEP 3: Payment ---
 elif st.session_state.chat_state == "payment":
     st.subheader("💳 Token Payment")
@@ -324,7 +345,8 @@ elif st.session_state.chat_state == "payment":
         st.rerun()
     go_back_to("select_doctor")
 
-# --- STEP 4: Confirmation ---
+
+
 # --- STEP 4: Confirmation ---
 elif st.session_state.chat_state == "confirmed":
     from io import BytesIO
