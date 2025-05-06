@@ -285,33 +285,54 @@ elif st.session_state.chat_state == "payment":
     go_back_to("select_doctor")
 
 
-elif st.session_state.chat_state == "confirmation":
+# --- STEP 4: Confirmation ---
+elif st.session_state.chat_state == "confirmed":
+    from io import BytesIO
+    from datetime import datetime
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.pagesizes import A4
+
     st.balloons()
-    st.success("✅ Appointment Confirmed!")
+    st.subheader("✅ Appointment Confirmed!")
+    st.success("Thank you for using AVACARE!")
+    st.write(f"Doctor: {st.session_state.selected_doctor}")
+    st.write(f"Slot: {st.session_state.selected_slot}")
+    st.write(f"Payment Mode: {st.session_state.selected_payment_mode}")
+
+    # Generate PDF confirmation
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     w, h = A4
     c.setFont("Helvetica-Bold", 18)
     c.drawCentredString(w / 2, h - 80, "Appointment Confirmation")
+
     c.setFont("Helvetica", 12)
-    y = h - 120
+    y = h - 130
     lines = [
-        f"Patient: {st.session_state.name}",
-        f"Patient ID: {st.session_state.patient_id}",
-        f"Doctor: Dr. {st.session_state.selected_doctor}",
-        f"Slot: {st.session_state.selected_slot}",
-        f"Specialty: {st.session_state.recommended_specialty}",
-        f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        f"Patient Name     : {st.session_state.name}",
+        f"Patient ID       : {st.session_state.patient_id}",
+        f"Doctor Name      : Dr. {st.session_state.selected_doctor}",
+        f"Specialty        : {st.session_state.recommended_specialty}",
+        f"Appointment Slot : {st.session_state.selected_slot}",
+        f"Payment Mode     : {st.session_state.selected_payment_mode}",
+        f"Confirmed At     : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
     ]
     for line in lines:
         c.drawString(60, y, line)
         y -= 20
+
+    c.drawString(60, y - 20, "-" * 50)
+    c.drawString(60, y - 40, "Thank you for choosing AVACARE!")
+
     c.save()
     buffer.seek(0)
-    st.download_button("📥 Download Confirmation", data=buffer, file_name="confirmation.pdf", mime="application/pdf")
-    if st.button("⬅️ Back to Main Menu"):
-        st.session_state.chat_state = "main_menu"
-        st.rerun()
 
+    # Download Button
+    st.download_button(
+        label="📥 Download Confirmation PDF",
+        data=buffer,
+        file_name=f"AVACARE_Confirmation_{st.session_state.patient_id}.pdf",
+        mime="application/pdf"
+    )
 
-
+    go_back_to("main_menu")
