@@ -8,6 +8,7 @@ from reportlab.lib.pagesizes import A4
 from datetime import datetime
 import requests
 
+
 # -------------------- GOOGLE SHEETS SETUP --------------------
 
 @st.cache_resource
@@ -168,26 +169,49 @@ elif st.session_state.chat_state == "greeting":
         st.rerun()
 
 elif st.session_state.chat_state == "voice_conversation":
-    st.subheader("🎙️ AVA Voice Assistant Demo")
-    st.markdown("This is a **voice-style interaction** prototype. You can simulate voice inputs here.")
+    from streamlit_audio_recorder import audio_recorder
+    import openai
+    import tempfile
+    import os
+    from pydub import AudioSegment
 
-    st.write("**AVA:** Hi, how are you today?")
-    st.text_input("👤 You:", key="vc1", label_visibility="collapsed")
+    openai.api_key = st.secrets["openai_api_key"]
 
-    st.write("**AVA:** I'm great! How can I help you today?")
-    st.text_input("👤 You:", key="vc2", label_visibility="collapsed")
+    st.subheader("🎙️ AVA Voice Assistant (Mic + Whisper)")
+    st.write("Click the button below to record your voice:")
 
-    st.write("**AVA:** Alrighty then! Let's start with some details of yours.")
-    st.text_input("👤 You:", key="vc3", label_visibility="collapsed")
+    # Record voice from mic
+    audio_bytes = audio_recorder(pause_threshold=2.0, text="Click to record", icon_size="2x")
 
-    st.write("**AVA:** Are you a fresh patient or a returning patient?")
-    st.text_input("👤 You:", key="vc4", label_visibility="collapsed")
+    if audio_bytes:
+        st.audio(audio_bytes, format="audio/wav")
 
-    st.success("✅ This is a prototype for voice interaction. Actual microphone + Whisper AI integration can follow.")
+        # Save WAV file temporarily
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_audio_file:
+            temp_audio_file.write(audio_bytes)
+            temp_audio_path = temp_audio_file.name
 
-    if st.button("Continue to Next Step"):
+        # Convert to MP3 for Whisper
+        audio = AudioSegment.from_wav(temp_audio_path)
+        mp3_path = temp_audio_path.replace(".wav", ".mp3")
+        audio.export(mp3_path, format="mp3")
+
+        # Transcribe with Whisper
+        with open(mp3_path, "rb") as f:
+            st.write("Transcribing...")
+            transcript = openai.Audio.transcribe("whisper-1", f)
+            spoken_text = transcript['text']
+            st.success("✅ Transcription Complete")
+            st.markdown(f"**You said:** {spoken_text}")
+
+        # Clean up files
+        os.remove(temp_audio_path)
+        os.remove(mp3_path)
+
+        # Save text and move to next state
         st.session_state.chat_state = "ask_identity"
         st.rerun()
+
 
 elif st.session_state.chat_state == "ask_identity":
     st.subheader("Are you a returning patient?")
