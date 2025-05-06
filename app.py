@@ -173,15 +173,26 @@ elif st.session_state.chat_state == "get_new_info":
         st.rerun()
     go_back_to("ask_identity")
 
-# Step 6: Main Menu
+# --- Step 6: Main Menu ---
 elif st.session_state.chat_state == "main_menu":
-    st.subheader(f"Welcome, {st.session_state.name}")
-    choice = st.selectbox("What would you like to do?", ["📅 Book an Appointment", "🚪 Exit"])
+    st.subheader(f"Welcome, {st.session_state.name} 👋")
+    st.markdown("What would you like to do?")
+
+    option = st.selectbox("Choose an action", [
+        "📅 Book an Appointment",
+        "🧾 View Last Prescription (Coming Soon)",
+        "🔁 Reschedule an Appointment (Coming Soon)",
+        "📝 Update Contact Info (Coming Soon)",
+        "🚪 Exit"
+    ])
+
     if st.button("Proceed"):
-        if choice == "📅 Book an Appointment":
-            st.session_state.chat_state = "ask_symptom"
+        if option == "📅 Book an Appointment":
+            st.session_state.chat_state = "ask_symptoms"
+        elif option == "🚪 Exit":
+            st.success("Thank you for using AVACARE. Take care!")
         else:
-            st.success("Thank you for using AVACARE.")
+            st.info("This feature is coming soon!")
         st.rerun()
         
 # --- STEP 1: Ask for Symptom ---
