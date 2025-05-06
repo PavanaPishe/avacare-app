@@ -115,10 +115,14 @@ elif st.session_state.chat_state == "greeting":
     }
     st.subheader("Conversation")
     st.markdown(f"**AVA:** {greetings[st.session_state.language]}")
+
     user_reply = st.text_input("Your Response:")
     if user_reply:
         st.session_state.chat_state = "ask_identity"
         st.rerun()
+
+    go_back_to("choose_language")  # 🔙 Back to language selection
+
 
 # Step 4: New or Returning
 elif st.session_state.chat_state == "ask_identity":
