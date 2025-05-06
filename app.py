@@ -308,7 +308,8 @@ elif st.session_state.chat_state == "payment":
     go_back_to("select_doctor")
 
 
-elif st.session_state.chat_state == "confirmation":
+
+   elif st.session_state.chat_state == "confirmation":
     from datetime import datetime
     from io import BytesIO
     from reportlab.pdfgen import canvas
@@ -317,32 +318,31 @@ elif st.session_state.chat_state == "confirmation":
     sheet = connect_to_patient_sheet()
     df = load_patient_dataframe(sheet)
 
-    # Fetch patient row
-    match = df[df["Patient_ID"] == st.session_state.patient_id]
-
     st.balloons()
     st.subheader("✅ Appointment Confirmed!")
     st.success("Your appointment has been successfully confirmed. Please download your confirmation below.")
 
-    # 📢 Friendly follow-up message
-    if not match.empty:
-        last_date = match.iloc[0].get("Last_Appointment_Date", "")
-        missed = match.iloc[0].get("Missed_Appointments", 0)
-        reason = match.iloc[0].get("Missed_Appointment_Reason", "")
+    # --- 🧠 Smart Feedback Based on History ---
+    try:
+        patient = df[df["Patient_ID"] == st.session_state.patient_id].iloc[0]
+        last_date = patient.get("Last_Appointment_Date", "Not Available")
+        missed = patient.get("Missed_Appointments", "0")
+        reason = patient.get("Missed_Appointment_Reason", "")
 
-        try:
-            if int(missed) > 0:
-                st.warning(
-                    f"🕒 Hey {st.session_state.name}, your last appointment was on **{last_date}**, "
-                    f"but it was marked as **missed**.\n\n"
-                    f"Reason noted: _'{reason}'_. Let's make sure we don't miss this one! 👍"
-                )
-            else:
-                st.info(f"👏 Great job, {st.session_state.name}! You’ve been punctual for your appointments. Keep it up!")
-        except:
-            pass
+        missed_count = int(str(missed).strip()) if str(missed).strip().isdigit() else 0
 
-    # 📄 PDF confirmation
+        if missed_count > 0:
+            st.warning(
+                f"🕒 Hey {st.session_state.name}, I see your last appointment was on **{last_date}**, "
+                f"but it was marked as **missed**.\n\n"
+                f"Reason noted: _'{reason}'_. Let's make sure this one's on track! 😊"
+            )
+        else:
+            st.info(f"👏 Well done {st.session_state.name}, you've been punctual with your appointments!")
+    except Exception as e:
+        st.info("📘 Appointment history not found. Let’s begin a fresh journey!")
+
+    # --- 📄 Generate PDF Confirmation ---
     buffer = BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
     w, h = A4
@@ -350,8 +350,8 @@ elif st.session_state.chat_state == "confirmation":
     c.drawCentredString(w / 2, h - 80, "Appointment Confirmation")
     c.setFont("Helvetica", 12)
     y = h - 120
-    lines = [
-        f"Patient: {st.session_state.name}",
+    details = [
+        f"Patient Name: {st.session_state.name}",
         f"Patient ID: {st.session_state.patient_id}",
         f"Doctor: Dr. {st.session_state.selected_doctor}",
         f"Slot: {st.session_state.selected_slot}",
@@ -359,7 +359,7 @@ elif st.session_state.chat_state == "confirmation":
         f"Payment Mode: {st.session_state.selected_payment_mode}",
         f"Confirmed At: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
     ]
-    for line in lines:
+    for line in details:
         c.drawString(60, y, line)
         y -= 20
     c.save()
@@ -371,6 +371,9 @@ elif st.session_state.chat_state == "confirmation":
         file_name=f"AVACARE_Confirmation_{st.session_state.patient_id}.pdf",
         mime="application/pdf"
     )
+
+    go_back_to("main_menu")
+
 
     go_back_to("main_menu")
 
