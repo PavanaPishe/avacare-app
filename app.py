@@ -424,6 +424,32 @@ elif st.session_state.chat_state == "payment":
 
 # --- STEP 4: Confirmation ---
 elif st.session_state.chat_state == "confirmed":
+    if missed_count > 0:
+    st.warning(f"...your missed appointment...")
+    ...
+    if "transportation" in reason.lower():
+        ...
+            # --- Smart Rescheduling Assistant ---
+    st.info("🔁 Since you missed a previous appointment, here are the next best available slots:")
+
+    doc_id = doctor_df[doctor_df["Doctor_Name"] == st.session_state.selected_doctor]["Doctor_ID"].values[0]
+    open_slots = availability_df[
+        (availability_df["Doctor_ID"] == doc_id) & 
+        (availability_df["Slot_Status"] == "Open")
+    ].sort_values(by=["Date", "Start_Time"]).head(3)
+
+    if not open_slots.empty:
+        slot_labels = open_slots["Date"] + " " + open_slots["Start_Time"]
+        new_slot = st.radio("📅 Choose a new slot to reschedule:", slot_labels.tolist())
+
+        if st.button("Reschedule to This Slot"):
+            mark_slot_as_filled(st.session_state.selected_doctor, new_slot)
+            st.session_state.selected_slot = new_slot
+            st.success(f"✅ Appointment rescheduled to {new_slot}")
+            st.rerun()
+    else:
+        st.warning("No alternative slots available right now. Please try again later.")
+
     from io import BytesIO
     from datetime import datetime
     from reportlab.pdfgen import canvas
