@@ -175,9 +175,11 @@ elif st.session_state.chat_state == "get_returning_info":
     go_back_to("ask_identity")
 
 
+
 # Step 5B: New Patient
 elif st.session_state.chat_state == "get_new_info":
     st.subheader("📝 Register as a New Patient")
+
     sheet = connect_to_patient_sheet()
     ws = sheet.worksheet("Sheet1")
     new_id = get_next_patient_id(sheet)
@@ -189,16 +191,27 @@ elif st.session_state.chat_state == "get_new_info":
     age = st.number_input("Age", min_value=0, max_value=120)
     symptom = st.text_input("Symptoms")
     contact = st.text_input("Contact Number")
+    email = st.text_input("Email Address")
+    insurance = st.selectbox("Insurance Type", ["Private", "Public", "Self-Pay"])
+    preferred_lang = st.selectbox("Preferred Communication Language", ["English", "Hindi", "Spanish"])
+    caregiver = st.radio("Do you need caregiver assistance?", ["Yes", "No"])
+    emergency_contact_name = st.text_input("Emergency Contact Name")
+    emergency_contact_phone = st.text_input("Emergency Contact Phone")
 
     if st.button("Register"):
-        row = [new_id, fname, lname, gender, age, symptom, ""] + [""] * 17
-        register_new_patient(sheet, row)
+        row = [
+            new_id, fname, lname, gender, age, symptom, contact, email, insurance,
+            preferred_lang, caregiver, emergency_contact_name, emergency_contact_phone
+        ]
+        ws.append_row(row)
         st.session_state.name = fname
         st.session_state.patient_id = new_id
+        st.success(f"🎉 Welcome {fname}! Your Patient ID is {new_id}")
         st.session_state.chat_state = "main_menu"
-        st.success("✅ Registered successfully!")
         st.rerun()
+
     go_back_to("ask_identity")
+
 
 # --- Step 6: Main Menu ---
 elif st.session_state.chat_state == "main_menu":
