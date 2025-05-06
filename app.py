@@ -163,6 +163,8 @@ elif st.session_state.chat_state == "choose_language":
     st.subheader("Step 2: Choose your language")
     st.session_state.language = st.radio("Preferred Language:", ["English", "Hindi", "Spanish"])
     if st.button("Continue"):
+    if st.session_state.mode == "voice":     
+        st.session_state.chat_state = "voice_conversation" else:     
         st.session_state.chat_state = "greeting"
         st.rerun()
     go_back_to("choose_mode")
@@ -170,7 +172,7 @@ elif st.session_state.chat_state == "choose_language":
 # Step 3: Greeting
 elif st.session_state.chat_state == "greeting":
     greetings = {
-        "English": "Hi, how are you doing today?",
+        "English": "Hi, how are you doing today?
         "Hindi": "नमस्ते, आज आप कैसे हैं?",
         "Spanish": "Hola, ¿cómo estás hoy?"
     }
@@ -183,6 +185,25 @@ elif st.session_state.chat_state == "greeting":
         st.rerun()
 
     go_back_to("choose_language")  # 🔙 Back to language selection
+
+# --- Voice Conversation Demo ---
+elif st.session_state.chat_state == "voice_conversation":
+    st.subheader("🎙️ AVA Voice Assistant Demo")
+    
+    st.write("**AVA:** Hi, how are you today?")
+    st.text_input("👤 You:", key="vc1", label_visibility="collapsed")
+
+    st.write("**AVA:** I'm great! How can I help you today?")
+    st.text_input("👤 You:", key="vc2", label_visibility="collapsed")
+
+    st.write("**AVA:** Alrighty then! Let's start with some details of yours.")
+    st.text_input("👤 You:", key="vc3", label_visibility="collapsed")
+
+    st.write("**AVA:** Are you a fresh patient or a returning patient?")
+    st.text_input("👤 You:", key="vc4", label_visibility="collapsed")
+
+    st.success("✅ This is a voice chat demo prototype. Real-time audio can be added using mic + Whisper model later.")
+
 
 
 # Step 4: New or Returning
@@ -538,39 +559,5 @@ elif st.session_state.chat_state == "confirmed":
         st.error("⚠️ Some appointment details are missing. Please complete booking before downloading the confirmation.")
 
 
-# --- STEP: Voice Conversation Demo ---
-elif st.session_state.chat_state == "voice_demo":
-    st.subheader("🎤 AVACARE Voice Assistant (Prototype Demo)")
-    st.markdown("Each response from the patient is shown as **transcribed voice reply**.")
 
-    conversation = [
-        {"ava": "Hey! I am AVA, how are you today?", "patient": "I'm good, how are you?"},
-        {"ava": "I'm great! How can I help you today?", "patient": "I wanted to book an appointment."},
-        {"ava": "Alrighty then! Let's start with some details of yours!", "patient": "Sure!"},
-        {"ava": "Are you a fresh patient or a returning patient?", "patient": "Fresh."}
-    ]
-
-    for i, exchange in enumerate(conversation):
-        st.markdown(f"**AVA:** {exchange['ava']}")
-        st.markdown(f"**🧑 Patient (transcribed):** {exchange['patient']}")
-        st.markdown("---")
-
-    go_back_to("main_menu")
-    option = st.selectbox("Choose an action", [
-        "📅 Book an Appointment",
-        "🧾 View Last Prescription (Coming Soon)",
-        "🔁 Reschedule an Appointment (Coming Soon)",
-        "📝 Update Contact Info (Coming Soon)",
-        "🎤 Try Voice Assistant",   # 👈 Add this line
-        "🚪 Exit"
-    ])
-    if option == "📅 Book an Appointment":
-        st.session_state.chat_state = "ask_symptoms"
-    elif option == "🎤 Try Voice Assistant":
-        st.session_state.chat_state = "voice_demo"
-    elif option == "🚪 Exit":
-        st.success("Thank you for using AVACARE. Take care!")
-    else:
-        st.info("This feature is coming soon!")
-    st.rerun()
 
