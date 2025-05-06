@@ -307,20 +307,22 @@ elif st.session_state.chat_state == "payment":
         st.rerun()
     go_back_to("select_doctor")
 
-
-
-   elif st.session_state.chat_state == "confirmed":
-    from datetime import datetime
+# --- STEP 4: Confirmation ---
+elif st.session_state.chat_state == "confirmed":
     from io import BytesIO
+    from datetime import datetime
     from reportlab.pdfgen import canvas
     from reportlab.lib.pagesizes import A4
 
-    sheet = connect_to_patient_sheet()
+     sheet = connect_to_patient_sheet()
     df = load_patient_dataframe(sheet)
 
     st.balloons()
     st.subheader("✅ Appointment Confirmed!")
-    st.success("Your appointment has been successfully confirmed. Please download your confirmation below.")
+    st.success("Thank you for using AVACARE!")
+    st.write(f"Doctor: {st.session_state.selected_doctor}")
+    st.write(f"Slot: {st.session_state.selected_slot}")
+    st.write(f"Payment Mode: {st.session_state.selected_payment_mode}")
 
     # --- 🧠 Smart Feedback Based on History ---
     try:
